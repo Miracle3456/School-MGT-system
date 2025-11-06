@@ -1,0 +1,24 @@
+# .render.yaml for Render.com deployment
+services:
+  - type: web
+    name: school-mgt-system
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn school_system.wsgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: school_system.settings
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: DATABASE_URL
+        fromDatabase:
+          name: school-mgt-db
+          property: connectionString
+    autoDeploy: true
+
+# Optionally, add a database service
+# databases:
+#   - name: school-mgt-db
+#     plan: free
+#     databaseName: schoolmgt
+#     user: schoolmgtuser
