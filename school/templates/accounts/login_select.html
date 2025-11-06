@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Choose login type{% endblock %}
+
+{% block content %}
+  <h2>Choose how you'd like to sign in</h2>
+  <p class="muted">Pick your user type to go to the appropriate login page.</p>
+
+  <div style="margin-top:12px">
+    <a class="btn" href="{% url 'login_admin' %}">Admin login</a>
+    <a class="btn" href="{% url 'login_teacher' %}" style="background:#10b981">Teacher login</a>
+    <a class="btn" href="{% url 'login_student' %}" style="background:#f59e0b">Student login</a>
+  </div>
+
+{% endblock %}

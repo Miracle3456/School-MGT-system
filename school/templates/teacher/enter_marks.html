@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Enter Marks{% endblock %}
+{% block content %}
+  <h2>Enter marks</h2>
+
+  <form method="get" style="margin-bottom:12px">
+    <label>Class</label>
+    <select name="class_id" onchange="this.form.submit()">
+      <option value="">-- select class --</option>
+      {% for c in classes %}
+        <option value="{{ c.id }}" {% if request.GET.class_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col">
+        <label>Student</label>
+        <select name="student_id" required>
+          <option value="">-- select student --</option>
+          {% for s in students %}
+            <option value="{{ s.id }}">{{ s.user.get_full_name }} ({{ s.admission_number }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col">
+        <label>Subject</label>
+        <select name="subject_id" required>
+          {% for sub in subjects %}
+            <option value="{{ sub.id }}">{{ sub.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div class="col"><label>Assignment</label><input name="assignment_marks" type="number" step="0.01" /></div>
+      <div class="col"><label>Midterm</label><input name="midterm_marks" type="number" step="0.01" /></div>
+      <div class="col"><label>Exam</label><input name="exam_marks" type="number" step="0.01" /></div>
+    </div>
+    <div style="margin-top:12px"><button class="btn" type="submit">Save marks</button></div>
+  </form>
+
+{% endblock %}

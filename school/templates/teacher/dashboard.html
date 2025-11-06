@@ -1,0 +1,92 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Teacher Dashboard{% endblock %}
+
+{% block content %}
+  <div class="mb-3">
+    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+  </div>
+  <h2>Welcome, {{ teacher.user.get_full_name }}</h2>
+  <p class="muted">You teach:
+    {% if teacher.subjects.all %}
+      {% for s in teacher.subjects.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    {% else %}
+      None
+    {% endif %}
+  </p>
+
+  <div style="margin-top:16px">
+    <a class="btn" href="{% url 'enter_marks' %}">Enter marks</a>
+    <a class="btn" href="{% url 'add_comments' %}" style="background:#ef4444">Add comments</a>
+  </div>
+
+  <h3 style="margin-top:24px">Batch Reports</h3>
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label for="batch_class_id">Grade/Class</label>
+      <select name="batch_class_id" id="batch_class_id" class="form-select">
+        {% for c in classes %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="batch_term_id">Term</label>
+      <select name="batch_term_id" id="batch_term_id" class="form-select">
+        {% if terms %}
+          {% for t in terms %}
+            <option value="{{ t.id }}">{{ t }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="batch_subject_id">Subject</label>
+      <select name="batch_subject_id" id="batch_subject_id" class="form-select">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-warning" onclick="var c=document.getElementById('batch_class_id').value;var t=document.getElementById('batch_term_id').value;var s=document.getElementById('batch_subject_id').value;if(c&&t){var url='{% url 'batch_student_reports_zip' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download All Student Reports (ZIP)</button>
+    </div>
+  </form>
+
+  <h3 style="margin-top:24px">Class Reports</h3>
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label for="class_id">Grade/Class</label>
+      <select name="class_id" id="class_id" class="form-select">
+        {% for c in classes %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="term_id">Term</label>
+      <select name="term_id" id="term_id" class="form-select">
+        {% if terms %}
+          {% for t in terms %}
+            <option value="{{ t.id }}">{{ t }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="subject_id">Subject</label>
+      <select name="subject_id" id="subject_id" class="form-select">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-info" onclick="var c=document.getElementById('class_id').value;var t=document.getElementById('term_id').value;var s=document.getElementById('subject_id').value;if(c&&t){var url='{% url 'class_pdf_report' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download Class Report (PDF)</button>
+    </div>
+  </form>
+
+{% endblock %}

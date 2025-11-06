@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Comments{% endblock %}
+{% block content %}
+  <h2>Add comments</h2>
+
+  <form method="get" style="margin-bottom:12px">
+    <label>Class</label>
+    <select name="class_id" onchange="this.form.submit()">
+      <option value="">-- select class --</option>
+      {% for c in classes %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <form method="post">
+    {% csrf_token %}
+    <label>Student</label>
+    <select name="student_id">
+      <option value="">-- select student --</option>
+      {% for s in students %}
+        <option value="{{ s.id }}">{{ s.user.get_full_name }} ({{ s.admission_number }})</option>
+      {% endfor %}
+    </select>
+
+    <label>Term</label>
+    <select name="term_id">
+      {% for t in terms %}
+        <option value="{{ t.id }}">{{ t }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Comment</label>
+    <textarea name="comment" rows="4"></textarea>
+
+    <div style="margin-top:12px"><button class="btn" type="submit">Save comment</button></div>
+  </form>
+
+{% endblock %}

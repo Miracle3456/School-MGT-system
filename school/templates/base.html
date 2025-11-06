@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}School MGT{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div><strong>School MGT</strong></div>
+      <nav>
+        {% if request.user.is_authenticated %}
+          {% if request.user.user_type == 'admin' %}
+            <a href="{% url 'admin_dashboard' %}">Admin</a>
+          {% elif request.user.user_type == 'teacher' %}
+            <a href="{% url 'teacher_dashboard' %}">Teacher</a>
+          {% else %}
+            <a href="{% url 'student_dashboard' %}">Student</a>
+          {% endif %}
+          <a href="{% url 'logout' %}">Logout</a>
+        {% else %}
+          <a href="{% url 'login' %}">Login</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="flash {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <main class="card">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+      &copy; {{ now.year }} School MGT — Minimal interface
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+  <div class="mb-3">
+    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+  </div>
+  <h2>Hi, {{ student.user.get_full_name }}</h2>
++  <p class="muted">Active term: {{ active_term }}</p>
++
++  <h3 style="margin-top:12px">Recent marks</h3>
++  <table>
++    <thead><tr><th>Subject</th><th>Total</th><th>Grade</th></tr></thead>
++    <tbody>
++      {% for m in recent_marks %}
++        <tr><td>{{ m.subject.name }}</td><td>{{ m.total_marks }}</td><td>{{ m.grade }}</td></tr>
++      {% empty %}
++        <tr><td colspan="3" class="muted">No marks available</td></tr>
++      {% endfor %}
++    </tbody>
++  </table>
++
++  {% if active_term %}
++    <p style="margin-top:12px"><a class="btn" href="{% url 'view_report' active_term.id %}">View full report</a></p>
++  {% endif %}
+{% endblock %}

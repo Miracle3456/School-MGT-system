@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Teacher Login{% endblock %}
+
+{% block content %}
+  <div class="mb-3">
+    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+  </div>
+  <h2>Teacher sign in</h2>
+  <p class="muted">Use your teacher credentials.</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <label>Username</label>
+    <input type="text" name="username" required />
+
+    <label>Password</label>
+    <input type="password" name="password" required />
+
+    <div style="margin-top:12px"><button class="btn" type="submit">Sign in</button></div>
+  </form>
+
+{% endblock %}

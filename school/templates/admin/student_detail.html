@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Student Details{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'manage_students' %}" class="btn btn-secondary">Back to Students</a>
+  <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+</div>
+<h2>Student Details</h2>
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">{{ student.user.get_full_name }}</h5>
+    <p class="card-text">
+      <b>Admission No:</b> {{ student.admission_number }}<br>
+      <b>Class:</b> {{ student.student_class.name }}<br>
+      <b>Date of Birth:</b> {{ student.date_of_birth }}<br>
+      <b>Guardian:</b> {{ student.guardian_name }} ({{ student.guardian_phone }})<br>
+      <b>Email:</b> {{ student.user.email }}
+    </p>
+  </div>
+</div>
+
+<h3>Marks</h3>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Term</th><th>Subject</th><th>Assignment</th><th>Midterm</th><th>Exam</th><th>Total</th><th>Grade</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for mark in marks %}
+    <tr>
+      <td>{{ mark.term }}</td>
+      <td>{{ mark.subject.name }}</td>
+      <td>{{ mark.assignment_marks }}</td>
+      <td>{{ mark.midterm_marks }}</td>
+      <td>{{ mark.exam_marks }}</td>
+      <td>{{ mark.total_marks }}</td>
+      <td>{{ mark.grade }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No marks found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h3>Comments</h3>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Term</th><th>Teacher</th><th>Class Teacher Comment</th><th>Head Teacher Comment</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for comment in comments %}
+    <tr>
+      <td>{{ comment.term }}</td>
+      <td>{% if comment.teacher %}{{ comment.teacher.user.get_full_name }}{% else %}-{% endif %}</td>
+      <td>{{ comment.class_teacher_comment }}</td>
+      <td>{{ comment.headteacher_comment|default:'-' }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4">No comments found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

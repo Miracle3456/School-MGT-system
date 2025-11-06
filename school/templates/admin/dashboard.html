@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+  <div class="mb-3">
+    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+  </div>
+  <h2>Admin dashboard</h2>
+  <div class="row" style="margin-top:12px">
+    <div class="col card">
+      <h3>{{ total_students }}</h3>
+      <div class="muted">Total students</div>
+    </div>
+    <div class="col card">
+      <h3>{{ total_teachers }}</h3>
+      <div class="muted">Total teachers</div>
+    </div>
+    <div class="col card">
+      <h3>{{ total_classes }}</h3>
+      <div class="muted">Total classes</div>
+    </div>
+    <div class="col card">
+      <h3>{{ total_subjects }}</h3>
+      <div class="muted">Total subjects</div>
+    </div>
+  </div>
+
+  <p style="margin-top:16px"><a class="btn" href="{% url 'manage_students' %}">Manage students</a>
+  <a class="btn" href="{% url 'manage_teachers' %}" style="background:#10b981">Manage teachers</a></p>
+
+  <h3 style="margin-top:24px">Batch Reports</h3>
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label for="batch_class_id">Grade/Class</label>
+      <select name="batch_class_id" id="batch_class_id" class="form-select">
+        {% for c in classes %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="batch_term_id">Term</label>
+      <select name="batch_term_id" id="batch_term_id" class="form-select">
+        {% for t in terms %}
+          <option value="{{ t.id }}">{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="batch_subject_id">Subject</label>
+      <select name="batch_subject_id" id="batch_subject_id" class="form-select">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-warning" onclick="var c=document.getElementById('batch_class_id').value;var t=document.getElementById('batch_term_id').value;var s=document.getElementById('batch_subject_id').value;if(c&&t){var url='{% url 'batch_student_reports_zip' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download All Student Reports (ZIP)</button>
+    </div>
+  </form>
+
+  <h3 style="margin-top:24px">Class Reports</h3>
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label for="class_id">Grade/Class</label>
+      <select name="class_id" id="class_id" class="form-select">
+        {% for c in classes %}
+          <option value="{{ c.id }}">{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="term_id">Term</label>
+      <select name="term_id" id="term_id" class="form-select">
+        {% for t in terms %}
+          <option value="{{ t.id }}">{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label for="subject_id">Subject</label>
+      <select name="subject_id" id="subject_id" class="form-select">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="button" class="btn btn-info" onclick="var c=document.getElementById('class_id').value;var t=document.getElementById('term_id').value;var s=document.getElementById('subject_id').value;if(c&&t){var url='{% url 'class_pdf_report' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download Class Report (PDF)</button>
+    </div>
+  </form>
+{% endblock %}
