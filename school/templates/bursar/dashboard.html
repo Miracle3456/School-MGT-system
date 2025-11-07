@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bursar Dashboard</title>
+    <style>body{font-family:Arial,Helvetica,sans-serif;margin:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:8px;text-align:left}</style>
+</head>
+<body>
+    <h1>Bursar Dashboard</h1>
+    <p>Active Term: {{ active_term }}</p>
+
+    <section>
+        <h2>Collections</h2>
+        <p>Today: {{ today_total }}</p>
+        <p>This Week: {{ week_total }}</p>
+        <p>Term Expected: {{ total_expected }}</p>
+        <p>Term Collected: {{ total_collected }}</p>
+        <p>Collection Rate: {{ collection_rate }}%</p>
+    </section>
+
+    <section>
+        <h2>Payment Methods</h2>
+        <table>
+            <thead><tr><th>Method</th><th>Count</th><th>Total</th></tr></thead>
+            <tbody>
+                {% for pm in payment_methods %}
+                    <tr>
+                        <td>{{ pm.payment_method }}</td>
+                        <td>{{ pm.count }}</td>
+                        <td>{{ pm.total }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="3">No payments recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Class Statistics</h2>
+        <table>
+            <thead><tr><th>Class</th><th>Expected</th><th>Collected</th><th>Rate</th></tr></thead>
+            <tbody>
+                {% for cs in class_stats %}
+                    <tr>
+                        <td>{{ cs.class.name }}</td>
+                        <td>{{ cs.expected }}</td>
+                        <td>{{ cs.collected }}</td>
+                        <td>{{ cs.rate|floatformat:2 }}%</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4">No class stats available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Recent Payments</h2>
+        <table>
+            <thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+                {% for p in recent_payments %}
+                    <tr>
+                        <td>{{ p.receipt_no }}</td>
+                        <td>{{ p.student.user.get_full_name }}</td>
+                        <td>{{ p.amount_paid }}</td>
+                        <td>{{ p.payment_date }}</td>
+                        <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}">Receipt</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5">No payments recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</body>
+</html>

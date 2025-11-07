@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manage Payments</title>
+    <style>body{font-family:Arial,Helvetica,sans-serif;margin:20px}label{display:block;margin-top:8px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:8px;text-align:left}</style>
+</head>
+<body>
+        <nav style="margin-bottom:12px">
+            <a class="btn btn-outline-primary" href="{% url 'bursar_dashboard' %}">Home</a>
+            <a class="btn" href="javascript:history.back()">Back</a>
+        </nav>
+
+        <h1>Record a Payment</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label>Student
+            <select name="student_id" required>
+                <option value="">-- Select student --</option>
+                {% for s in students %}
+                    <option value="{{ s.id }}">{{ s.admission_number }} - {{ s.user.get_full_name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Amount
+            <input type="number" name="amount" step="0.01" required />
+        </label>
+        <label>Payment Method
+            <select name="payment_method" required>
+                {% for key,label in payment_methods %}
+                    <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Transaction Reference
+            <input type="text" name="transaction_reference" />
+        </label>
+        <label>Notes
+            <textarea name="notes" rows="2"></textarea>
+        </label>
+        <button type="submit">Record Payment</button>
+    </form>
+
+        <hr />
+        <h2>Students Fee Summary (Active Term: {{ active_term }})</h2>
+        <p>Download unpaid report for a class:
+            <form method="get" action="{% url 'bursar_unpaid_report' class_id=0 term_id=0 %}" style="display:inline-block">
+                <select id="unpaid_class_select">
+                    <option value="">-- Select class --</option>
+                    {% for c in classes %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn" onclick="var c=document.getElementById('unpaid_class_select').value; if(!c){alert('Select a class');return;} var t='{{ active_term.id }}'; var url='{% url 'bursar_unpaid_report' class_id=0 term_id=0 %}'.replace('0/term/0','').replace('/class/0/term/0',''); url = url.replace('0/term/0',''); /*fallback*/; window.location = '{% url 'bursar_unpaid_report' class_id=0 term_id=0 %}'.replace('/class/0/term/0','/class/'+c+'/term/'+t);">Download Unpaid CSV</button>
+            </form>
+        </p>
+    <table>
+        <thead><tr><th>Admission</th><th>Name</th><th>Details</th></tr></thead>
+        <tbody>
+            {% for s in students %}
+                <tr>
+                    <td>{{ s.admission_number }}</td>
+                    <td>{{ s.user.get_full_name }}</td>
+                    <td><a href="{% url 'student_fee_detail' student_id=s.id %}">View</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No students available.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

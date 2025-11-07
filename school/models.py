@@ -7,6 +7,7 @@ class User(AbstractUser):
         ('admin', 'Administrator'),
         ('teacher', 'Teacher'),
         ('student', 'Student'),
+        ('bursar', 'Bursar'),
     )
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
     phone = models.CharField(max_length=15, blank=True, null=True)
@@ -146,3 +147,86 @@ class Comment(models.Model):
     class Meta:
         db_table = 'comments'
         unique_together = ['student', 'term']
+
+class ClassFee(models.Model):
+    class_assigned = models.ForeignKey(Class, on_delete=models.CASCADE)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    due_date = models.DateField()
+    fee_type = models.CharField(max_length=50, choices=[
+        ('tuition', 'Tuition Fee'),
+        ('exam', 'Examination Fee'),
+        ('lab', 'Laboratory Fee'),
+        ('other', 'Other Charges')
+    ])
+    description = models.TextField(blank=True)
+    
+    class Meta:
+        db_table = 'class_fees'
+        unique_together = ['class_assigned', 'term', 'fee_type']
+        
+    def __str__(self):
+        return f"{self.class_assigned} - {self.term} - {self.get_fee_type_display()} (${self.amount})"
+        
+class FeePayment(models.Model):
+    PAYMENT_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('partial', 'Partially Paid'),
+        ('paid', 'Fully Paid'),
+        ('overdue', 'Overdue')
+    )
+    PAYMENT_METHOD_CHOICES = (
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cheque', 'Cheque'),
+        ('mobile_money', 'Mobile Money')
+    )
+    
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    receipt_no = models.CharField(max_length=20, unique=True)
+    transaction_reference = models.CharField(max_length=50, blank=True)
+    processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+                                   limit_choices_to={'user_type': 'bursar'})
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        db_table = 'fee_payments'
+        
+    def __str__(self):
+        return f"Receipt #{self.receipt_no} - {self.student}"
+        
+    def save(self, *args, **kwargs):
+        # Auto-generate receipt number if not provided
+        if not self.receipt_no:
+            last_payment = FeePayment.objects.order_by('-id').first()
+            next_id = (last_payment.id + 1) if last_payment else 1
+            self.receipt_no = f"RCP{next_id:06d}"
+            
+        # Calculate payment status based on total fees vs amount paid
+        total_fees = ClassFee.objects.filter(
+            class_assigned=self.student.student_class,
+            term=self.term
+        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        
+        total_paid = FeePayment.objects.filter(
+            student=self.student,
+            term=self.term
+        ).aggregate(paid=models.Sum('amount_paid'))['paid'] or 0
+        
+        total_paid += self.amount_paid  # Add current payment
+        
+        if total_paid >= total_fees:
+            self.payment_status = 'paid'
+        elif total_paid > 0:
+            self.payment_status = 'partial'
+        elif self.due_date and self.due_date < timezone.now().date():
+            self.payment_status = 'overdue'
+        else:
+            self.payment_status = 'pending'
+            
+        super().save(*args, **kwargs)

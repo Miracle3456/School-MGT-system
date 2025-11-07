@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manage Fees</title>
+    <style>body{font-family:Arial,Helvetica,sans-serif;margin:20px}label{display:block;margin-top:8px}</style>
+</head>
+<body>
+    <h1>Manage Class Fees</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <label>Class
+            <select name="class_id" required>
+                <option value="">-- Select class --</option>
+                {% for c in classes %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>Term
+            <select name="term_id" required>
+                <option value="">-- Select term --</option>
+                {% for t in terms %}
+                    <option value="{{ t.id }}">{{ t }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <label>Fee Type
+            <select name="fee_type" required>
+                <option value="tuition">Tuition</option>
+                <option value="exam">Examination</option>
+                <option value="lab">Laboratory</option>
+                <option value="other">Other</option>
+            </select>
+        </label>
+
+        <label>Amount
+            <input type="number" name="amount" step="0.01" required />
+        </label>
+
+        <label>Due Date
+            <input type="date" name="due_date" />
+        </label>
+
+        <label>Description
+            <textarea name="description" rows="3"></textarea>
+        </label>
+
+        <button type="submit">Add Fee</button>
+    </form>
+
+    <hr />
+    <h2>Active Term: {{ active_term }}</h2>
+    <p>To view fees for a class, go to the class detail page.</p>
+    <ul>
+        {% for cls in classes %}
+            <li><a href="{% url 'class_fee_detail' class_id=cls.id %}">{{ cls.name }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
