@@ -12,6 +12,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from io import BytesIO
 import csv
+import json
 from decimal import Decimal, InvalidOperation
 from .models import User, Student, Teacher, Class, Subject, Term, Mark, Comment, ClassFee, FeePayment
 
@@ -314,9 +315,17 @@ def manage_students(request):
             # Auto-generate admission number if not provided
             admission_number = request.POST.get('admission_number')
             if not admission_number:
-                last_student = Student.objects.order_by('-id').first()
-                next_id = (last_student.id + 1) if last_student else 1
-                admission_number = f"S{next_id:04d}"
+                # Extract numeric part from existing ST numbers
+                existing = Student.objects.filter(admission_number__startswith='ST').order_by('admission_number').last()
+                if existing and existing.admission_number.startswith('ST'):
+                    try:
+                        last_num = int(existing.admission_number[2:])
+                        next_id = last_num + 1
+                    except ValueError:
+                        next_id = 1
+                else:
+                    next_id = 1
+                admission_number = f"ST{next_id:04d}"
             Student.objects.create(
                 user=user,
                 admission_number=admission_number,
@@ -358,9 +367,17 @@ def manage_teachers(request):
             # Auto-generate employee ID if not provided
             employee_id = request.POST.get('employee_id')
             if not employee_id:
-                last_teacher = Teacher.objects.order_by('-id').first()
-                next_id = (last_teacher.id + 1) if last_teacher else 1
-                employee_id = f"T{next_id:04d}"
+                # Extract numeric part from existing TC numbers
+                existing = Teacher.objects.filter(employee_id__startswith='TC').order_by('employee_id').last()
+                if existing and existing.employee_id.startswith('TC'):
+                    try:
+                        last_num = int(existing.employee_id[2:])
+                        next_id = last_num + 1
+                    except ValueError:
+                        next_id = 1
+                else:
+                    next_id = 1
+                employee_id = f"TC{next_id:04d}"
             teacher = Teacher.objects.create(
                 user=user,
                 employee_id=employee_id
@@ -946,14 +963,15 @@ def manage_payments(request):
             ).aggregate(total=Sum('amount_paid'))['total'] or 0
             
             fee_status[student.id] = {
-                'total_fees': total_fees,
-                'total_paid': total_paid,
-                'balance': total_fees - total_paid
+                'total_fees': float(total_fees),
+                'total_paid': float(total_paid),
+                'balance': float(total_fees - total_paid)
             }
     
     context = {
         'students': students,
         'fee_status': fee_status,
+        'fee_status_json': json.dumps(fee_status),
         'active_term': active_term,
         'payment_methods': FeePayment.PAYMENT_METHOD_CHOICES,
         'classes': Class.objects.all(),

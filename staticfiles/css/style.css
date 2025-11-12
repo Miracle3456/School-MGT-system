@@ -1,3 +1,51 @@
+/* Core layout */
+:root{
+    --bg:#0b1020; --card:#10172a; --muted:#9aa4b2; --text:#e6edf3; --brand:#3b82f6; --accent:#22c55e; --warn:#f59e0b; --danger:#ef4444; --violet:#7c3aed;
+    --border:#1f2937; --table:#0f172a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.container{max-width:1100px;margin:0 auto;padding:24px}
+header{display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+header nav a{color:var(--text);text-decoration:none;margin-right:12px;padding:6px 8px;border-radius:6px;border:1px solid transparent}
+header nav a:hover{background:#0f172a;border-color:#1f2937}
+.muted{color:var(--muted)}
+
+/* Cards & content */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.mb-3{margin-bottom:12px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.col{flex:1 1 240px}
+
+/* Buttons */
+.btn{display:inline-block;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 12px;text-decoration:none;cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn-outline-primary{background:transparent;color:#c7d2fe;border:1px solid #334155}
+.btn-warning{background:var(--warn)}
+.btn-info{background:#06b6d4}
+.btn-danger{background:var(--danger)}
+.btn-success{background:var(--accent)}
+
+/* Forms */
+label{display:block;margin:8px 0 4px}
+input[type="text"],input[type="number"],input[type="date"],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #334155;background:#0b1324;color:var(--text)}
+textarea{resize:vertical}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;margin-top:8px;background:var(--table);border-radius:10px;overflow:hidden}
+th,td{padding:10px;border-bottom:1px solid #1f2937}
+th{background:#0b1324;text-align:left}
+tr:hover td{background:#0b1324}
+
+/* Flash messages */
+.flash{padding:10px;border-radius:8px;margin:8px 0}
+.flash.success{background:#0f3b2a;color:#a7f3d0;border:1px solid #14532d}
+.flash.error{background:#3b0d0d;color:#fecaca;border:1px solid #7f1d1d}
+
+/* Footer */
+footer{color:var(--muted);margin-top:18px;text-align:center}
+
 :root{
     --bg:#f7f8fb;
     --card:#ffffff;

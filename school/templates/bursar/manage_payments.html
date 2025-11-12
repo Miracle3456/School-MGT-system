@@ -114,15 +114,7 @@
     </table>
 
 <script>
-const feeStatusData = {
-  {% for s in students %}
-    {{ s.id }}: {
-      expected: {{ fee_status|get_item:s.id|get_item:'total_fees'|default:0 }},
-      paid: {{ fee_status|get_item:s.id|get_item:'total_paid'|default:0 }},
-      balance: {{ fee_status|get_item:s.id|get_item:'balance'|default:0 }}
-    }{% if not forloop.last %},{% endif %}
-  {% endfor %}
-};
+const feeStatusData = {{ fee_status_json|safe }};
 
 function loadStudentBalance() {
   const select = document.getElementById('student_select');
@@ -139,12 +131,12 @@ function loadStudentBalance() {
   const name = option.getAttribute('data-name');
   const admission = option.getAttribute('data-admission');
   const className = option.getAttribute('data-class');
-  const data = feeStatusData[studentId] || { expected: 0, paid: 0, balance: 0 };
+  const data = feeStatusData[studentId] || { total_fees: 0, total_paid: 0, balance: 0 };
   
   info.innerHTML = `
     <strong>${name}</strong> (${admission}) — Class: ${className}<br/>
-    <span style="color:#60a5fa">Total Due: ${data.expected.toFixed(2)}</span> | 
-    <span style="color:#34d399">Paid: ${data.paid.toFixed(2)}</span> | 
+    <span style="color:#60a5fa">Total Due: ${data.total_fees.toFixed(2)}</span> | 
+    <span style="color:#34d399">Paid: ${data.total_paid.toFixed(2)}</span> | 
     <span style="color:${data.balance > 0 ? '#fbbf24' : '#34d399'}">Balance: ${data.balance.toFixed(2)}</span>
   `;
   display.style.display = 'block';
