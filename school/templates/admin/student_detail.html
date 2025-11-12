@@ -7,16 +7,42 @@
 </div>
 <h2>Student Details</h2>
 <div class="card mb-3">
-  <div class="card-body">
-    <h5 class="card-title">{{ student.user.get_full_name }}</h5>
-    <p class="card-text">
-      <b>Admission No:</b> {{ student.admission_number }}<br>
-      <b>Class:</b> {{ student.student_class.name }}<br>
-      <b>Date of Birth:</b> {{ student.date_of_birth }}<br>
-      <b>Guardian:</b> {{ student.guardian_name }} ({{ student.guardian_phone }})<br>
-      <b>Email:</b> {{ student.user.email }}
-    </p>
+  <div class="row" style="align-items:center;gap:16px">
+    <div class="col" style="flex:0 0 120px">
+      {% if student.photo %}
+        <img src="{{ student.photo.url }}" alt="{{ student.user.get_full_name }}" class="thumb" data-full="{{ student.photo.url }}" style="width:120px;height:120px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb;cursor:pointer" />
+      {% else %}
+        <div style="width:120px;height:120px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#6b7280">No Photo</div>
+      {% endif %}
+    </div>
+    <div class="col">
+      <h5 style="margin:0 0 8px 0">{{ student.user.get_full_name }}</h5>
+      <p style="margin:0">
+        <b>Admission No:</b> {{ student.admission_number }}<br>
+        <b>Class:</b> {{ student.student_class.name }}<br>
+        <b>Date of Birth:</b> {{ student.date_of_birth }}<br>
+        <b>Guardian:</b> {{ student.guardian_name }} ({{ student.guardian_phone }})<br>
+        <b>Email:</b> {{ student.user.email }}
+      </p>
+    </div>
   </div>
+</div>
+
+<!-- Reuse modal element if not present -->
+<div id="imgModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;padding:40px">
+  <div style="position:relative;max-width:520px;width:100%">
+    <button onclick="document.getElementById('imgModal').style.display='none'" style="position:absolute;top:-32px;right:-32px;background:#111;color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer">&times;</button>
+    <img id="modalImg" src="" alt="Preview" style="width:100%;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);object-fit:cover" />
+  </div>
+  <script>
+    document.addEventListener('click',function(e){
+      if(e.target.classList && e.target.classList.contains('thumb')){
+        document.getElementById('modalImg').src=e.target.getAttribute('data-full');
+        document.getElementById('imgModal').style.display='flex';
+      }
+      if(e.target.id==='imgModal'){document.getElementById('imgModal').style.display='none'}
+    });
+  </script>
 </div>
 
 <h3>Marks</h3>

@@ -5,11 +5,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Avg, Sum, Count, Q
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
 from io import BytesIO
 import csv
 import json
@@ -35,14 +35,25 @@ def batch_student_reports_zip(request, class_id, term_id):
             title = Paragraph(f"<b>STUDENT REPORT CARD</b>", styles['Title'])
             elements.append(title)
             elements.append(Spacer(1, 12))
-            info = f"""
+            info_html = f"""
             <b>Name:</b> {student.user.get_full_name()}<br/>
             <b>Admission No:</b> {student.admission_number}<br/>
             <b>Class:</b> {student.student_class.name}<br/>
             <b>Term:</b> {term}<br/>
             """
-            elements.append(Paragraph(info, styles['Normal']))
-            elements.append(Spacer(1, 20))
+            info_para = Paragraph(info_html, styles['Normal'])
+            if getattr(student, 'photo', None) and student.photo:
+                try:
+                    img = RLImage(student.photo.path, width=80, height=80)
+                    img.hAlign = 'LEFT'
+                    info_table = Table([[img, info_para]], colWidths=[90, 400])
+                    info_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+                    elements.append(info_table)
+                except Exception:
+                    elements.append(info_para)
+            else:
+                elements.append(info_para)
+            elements.append(Spacer(1, 16))
             data = [['Subject', 'Assignment', 'Midterm', 'Exam', 'Total', 'Grade']]
             for mark in marks:
                 data.append([
@@ -161,6 +172,29 @@ def admin_view_student(request, student_id):
         'comments': comments,
     }
     return render(request, 'admin/student_detail.html', context)
+
+@login_required
+@user_passes_test(lambda u: is_admin(u) or is_teacher(u) or is_bursar(u))
+def search_students(request):
+    """Return JSON list of students filtered by query q (name or admission)."""
+    q = request.GET.get('q', '').strip()
+    qs = Student.objects.select_related('user', 'student_class')
+    if q:
+        qs = qs.filter(
+            Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q) |
+            Q(admission_number__icontains=q)
+        )
+    qs = qs.order_by('user__first_name')[:10]
+    results = []
+    for s in qs:
+        results.append({
+            'id': s.id,
+            'name': s.user.get_full_name(),
+            'admission': s.admission_number,
+            'class': s.student_class.name if s.student_class else '-',
+            'photo': s.photo.url if getattr(s, 'photo', None) else ''
+        })
+    return JsonResponse({'results': results})
 
 # Login View
 def login_view(request, user_type=None):
@@ -332,7 +366,8 @@ def manage_students(request):
                 student_class_id=request.POST.get('class_id'),
                 date_of_birth=request.POST.get('date_of_birth'),
                 guardian_name=request.POST.get('guardian_name'),
-                guardian_phone=request.POST.get('guardian_phone')
+                guardian_phone=request.POST.get('guardian_phone'),
+                photo=request.FILES.get('photo')
             )
             messages.success(request, f'Student added successfully. Admission Number: {admission_number}')
         
@@ -380,7 +415,8 @@ def manage_teachers(request):
                 employee_id = f"TC{next_id:04d}"
             teacher = Teacher.objects.create(
                 user=user,
-                employee_id=employee_id
+                employee_id=employee_id,
+                photo=request.FILES.get('photo')
             )
             # Add subjects and classes
             subject_ids = request.POST.getlist('subjects')
@@ -705,16 +741,27 @@ def generate_pdf_report(request, student_id, term_id):
     title = Paragraph(f"<b>STUDENT REPORT CARD</b>", styles['Title'])
     elements.append(title)
     elements.append(Spacer(1, 12))
-    
-    # Student info
-    info = f"""
+
+    # Student info with optional photo
+    info_html = f"""
     <b>Name:</b> {student.user.get_full_name()}<br/>
     <b>Admission No:</b> {student.admission_number}<br/>
     <b>Class:</b> {student.student_class.name}<br/>
     <b>Term:</b> {term}<br/>
     """
-    elements.append(Paragraph(info, styles['Normal']))
-    elements.append(Spacer(1, 20))
+    info_para = Paragraph(info_html, styles['Normal'])
+    if getattr(student, 'photo', None) and student.photo:
+        try:
+            img = RLImage(student.photo.path, width=80, height=80)
+            img.hAlign = 'LEFT'
+            info_table = Table([[img, info_para]], colWidths=[90, 400])
+            info_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP')]))
+            elements.append(info_table)
+        except Exception:
+            elements.append(info_para)
+    else:
+        elements.append(info_para)
+    elements.append(Spacer(1, 16))
     
     # Marks table
     data = [['Subject', 'Assignment', 'Midterm', 'Exam', 'Total', 'Grade']]

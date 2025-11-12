@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
@@ -20,6 +22,7 @@ urlpatterns = [
     path('portal/admin/students/', views.manage_students, name='manage_students'),
     path('portal/admin/student/<int:student_id>/', views.admin_view_student, name='admin_view_student'),
     path('portal/admin/teachers/', views.manage_teachers, name='manage_teachers'),
+    path('portal/search/students/', views.search_students, name='search_students'),
     
     # Fee Management URLs
     path('portal/admin/fees/', views.manage_fees, name='manage_fees'),
@@ -47,3 +50,7 @@ urlpatterns = [
     path('student/fees/', views.student_my_fees, name='student_my_fees'),
     path('report/pdf/<int:student_id>/<int:term_id>/', views.generate_pdf_report, name='generate_pdf_report'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

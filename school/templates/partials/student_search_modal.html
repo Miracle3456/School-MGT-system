@@ -1,0 +1,81 @@
+{% comment %}Reusable student search modal. Use with:
+{% include 'partials/student_search_modal.html' with context_key='admin' term_id=active_term.id %}
+context_key: 'admin' | 'teacher' | 'bursar'
+term_id: optional for teacher (PDF link)
+{% endcomment %}
+<div id="studentSearchOverlay" class="modal-overlay" data-context="{{ context_key|default:'admin' }}" data-term="{{ term_id|default:'' }}">
+  <div class="search-modal" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
+    <div class="header">
+      <strong id="searchTitle">Search Students</strong>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;color:#64748b;font-size:12px">
+        <span>Open</span><kbd>Ctrl</kbd>+<kbd>K</kbd>
+        <span>•</span>
+        <span>Close</span><kbd>Esc</kbd>
+      </div>
+    </div>
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-4.35-4.35" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="10" cy="10" r="7"></circle></svg>
+      <input id="cmdkInput" class="search-input" type="text" placeholder="Type name or admission number..." autocomplete="off" />
+    </div>
+    <div id="cmdkResults" class="results"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const overlay=document.getElementById('studentSearchOverlay');
+  const input=document.getElementById('cmdkInput');
+  const list=document.getElementById('cmdkResults');
+  let items=[]; let active=-1; let t=null;
+  function highlight(text, q){ try{ if(!q) return text; const re=new RegExp('('+q.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&')+')','ig'); return text.replace(re,'<mark style="background:#ffef9f">$1</mark>'); }catch{return text} }
+  function render(q){
+    if(!items.length){ list.innerHTML='<div style="padding:16px;color:#64748b">No results</div>'; return; }
+    list.innerHTML = items.map((it,i)=>{
+      const img = it.photo ? `<img class=\"thumb\" src=\"${it.photo}\" alt=\"${it.name}\">` : `<div class=\"thumb\" style=\"display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#64748b\">${(it.name||'?').slice(0,1)}</div>`;
+      return `<div class=\"result-row ${i===active?'active':''}\" data-idx=\"${i}\">${img}
+        <div class=\"result-meta\">
+          <div class=\"name\">${highlight(it.name, q)}</div>
+          <div class=\"sub\">${it.admission} • ${it.class}</div>
+        </div>
+        <div class=\"actions\">${actionButtons(it)}</div>
+      </div>`;
+    }).join('');
+  }
+  function actionButtons(it){
+    const ctx = overlay.getAttribute('data-context');
+    const term = overlay.getAttribute('data-term');
+    const viewUrl = '{% url "admin_view_student" 0 %}'.replace('/0','/'+it.id);
+    const feesUrl = '{% url "student_fee_detail" 0 %}'.replace('/0','/'+it.id);
+    const payUrl = '{% url "manage_payments" %}' + '?student_id='+it.id;
+    const reportUrl = term ? ('{% url "generate_pdf_report" 0 0 %}'.replace('/0/0','/'+it.id+'/'+term)) : '#';
+    if(ctx==='teacher'){
+      return `<a class=\"btn btn-outline-primary\" href=\"{% url "enter_marks" %}\">Enter Marks</a>${term?`<a class=\"btn btn-info\" href=\"${reportUrl}\" target=\"_blank\">Report PDF</a>`:''}`;
+    } else if(ctx==='bursar'){
+      return `<a class=\"btn btn-success\" href=\"${feesUrl}\">Fees</a><a class=\"btn btn-warning\" href=\"${payUrl}\">Payment</a>`;
+    }
+    return `<a class=\"btn btn-outline-primary\" href=\"${viewUrl}\">Profile</a><a class=\"btn btn-success\" href=\"${feesUrl}\">Fees</a><a class=\"btn btn-warning\" href=\"${payUrl}\">Payment</a>`;
+  }
+  function open(){ overlay.style.display='flex'; input.value=''; list.innerHTML=''; active=-1; input.focus(); }
+  function close(){ overlay.style.display='none'; }
+  function search(){ const q=input.value.trim(); if(!q){ list.innerHTML=''; return; }
+    fetch('{% url "search_students" %}?q='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{ items=d.results||[]; active=items.length?0:-1; render(q); }).catch(()=>{ items=[]; render(q); });
+  }
+  document.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); open(); }
+    if(e.key==='Escape' && overlay.style.display==='flex'){ e.preventDefault(); close(); }
+  });
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+  input.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(search, 220); });
+  list.addEventListener('mouseover', (e)=>{ const row=e.target.closest('.result-row'); if(!row) return; active=parseInt(row.getAttribute('data-idx')); render(input.value.trim()); });
+  list.addEventListener('click', (e)=>{
+    const row=e.target.closest('.result-row'); if(!row) return; const btn=row.querySelector('.actions a'); if(btn) { window.location=btn.getAttribute('href'); }
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(overlay.style.display!=='flex') return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); if(items.length){ active=(active+1)%items.length; render(input.value.trim()); }}
+    if(e.key==='ArrowUp'){ e.preventDefault(); if(items.length){ active=(active-1+items.length)%items.length; render(input.value.trim()); }}
+    if(e.key==='Enter'){ e.preventDefault(); if(items.length && active>=0){ const row=list.querySelector(`.result-row[data-idx="${active}"]`); const btn=row && row.querySelector('.actions a'); if(btn){ window.location=btn.getAttribute('href'); } } }
+  });
+  // Expose opener for pages
+  window.openStudentSearch = open;
+})();
+</script>

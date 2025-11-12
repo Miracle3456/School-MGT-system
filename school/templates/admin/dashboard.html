@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
+  {% include 'partials/student_search_modal.html' with context_key='admin' term_id=active_term.id %}
   <div class="mb-3">
     <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
   </div>
   <h2>Admin dashboard</h2>
+  <div style="margin:12px 0"><button class="btn btn-outline-primary" type="button" onclick="openStudentSearch()">🔍 Search Students (Ctrl+K)</button></div>
   <div class="row" style="margin-top:12px">
     <div class="col card">
       <h3>{{ total_students }}</h3>
@@ -62,6 +64,8 @@
       <button type="button" class="btn btn-warning" onclick="var c=document.getElementById('batch_class_id').value;var t=document.getElementById('batch_term_id').value;var s=document.getElementById('batch_subject_id').value;if(c&&t){var url='{% url 'batch_student_reports_zip' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download All Student Reports (ZIP)</button>
     </div>
   </form>
+
+  <!-- Search modal handled by included partial -->
 
   <h3 style="margin-top:24px">Class Reports</h3>
   <form method="get" class="row g-2 align-items-end">

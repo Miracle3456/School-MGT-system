@@ -50,6 +50,7 @@ class Student(models.Model):
     date_of_birth = models.DateField()
     guardian_name = models.CharField(max_length=100)
     guardian_phone = models.CharField(max_length=15)
+    photo = models.ImageField(upload_to='students/photos/', blank=True, null=True)
     
     def __str__(self):
         return f"{self.admission_number} - {self.user.get_full_name()}"
@@ -62,6 +63,7 @@ class Teacher(models.Model):
     employee_id = models.CharField(max_length=20, unique=True)
     subjects = models.ManyToManyField(Subject)
     classes = models.ManyToManyField(Class, related_name='teachers')
+    photo = models.ImageField(upload_to='teachers/photos/', blank=True, null=True)
     
     def __str__(self):
         return f"{self.employee_id} - {self.user.get_full_name()}"

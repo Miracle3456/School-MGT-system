@@ -4,10 +4,12 @@
 {% block title %}Teacher Dashboard{% endblock %}
 
 {% block content %}
+  {% include 'partials/student_search_modal.html' with context_key='teacher' term_id=active_term.id %}
   <div class="mb-3">
     <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
   </div>
   <h2>Welcome, {{ teacher.user.get_full_name }}</h2>
+  <div style="margin:12px 0"><button class="btn btn-outline-primary" type="button" onclick="openStudentSearch()">🔍 Search Students (Ctrl+K)</button></div>
   <p class="muted">You teach:
     {% if teacher.subjects.all %}
       {% for s in teacher.subjects.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
@@ -88,5 +90,6 @@
       <button type="button" class="btn btn-info" onclick="var c=document.getElementById('class_id').value;var t=document.getElementById('term_id').value;var s=document.getElementById('subject_id').value;if(c&&t){var url='{% url 'class_pdf_report' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download Class Report (PDF)</button>
     </div>
   </form>
+  <!-- Search modal handled by included partial -->
 
 {% endblock %}
