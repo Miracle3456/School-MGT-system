@@ -1,22 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Class Fee Detail</title>
-    <style>body{font-family:Arial,Helvetica,sans-serif;margin:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:8px;text-align:left}</style>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block title %}Class Fee Detail{% endblock %}
+{% block content %}
         <nav style="margin-bottom:12px">
             <a class="btn btn-outline-primary" href="{% url 'admin_dashboard' %}">Home</a>
             <a class="btn" href="javascript:history.back()">Back</a>
             {% if term %}
-                <a class="btn" href="{% url 'unpaid_report' class_id=class.id term_id=term.id %}">Download Unpaid Report (CSV)</a>
+                <a class="btn" href="{% url 'unpaid_report' class_id=class.id term_id=term.id %}">Download Unpaid (CSV)</a>
+                <a class="btn" href="{% url 'unpaid_report_pdf' class_id=class.id term_id=term.id %}">Download Unpaid (PDF)</a>
             {% endif %}
         </nav>
 
-        <h1>Fees for {{ class.name }}</h1>
-        <h3>Term: {{ term }}</h3>
+        <h1 style="margin-top:0">Fees for {{ class.name }}</h1>
+        <p class="muted">Term: {{ term }}</p>
 
     <h2>Fee Structure</h2>
     {% if fees %}
@@ -37,21 +32,23 @@
         <p>No fee structure defined for this term.</p>
     {% endif %}
 
-    <h2>Students</h2>
+    <h2 style="margin-top:32px">Students</h2>
     <p>Click a student to view detailed fee status and payments.</p>
     <table>
-        <thead><tr><th>Admission</th><th>Name</th><th>Details</th></tr></thead>
+        <thead><tr><th>Admission</th><th>Name</th><th>Details</th><th>Actions</th></tr></thead>
         <tbody>
             {% for student in students %}
                 <tr>
                     <td>{{ student.admission_number }}</td>
                     <td>{{ student.user.get_full_name }}</td>
                     <td><a href="{% url 'student_fee_detail' student_id=student.id %}">View Fees</a></td>
+                    <td>
+                        <a class="btn" href="{% url 'manage_payments' %}?student_id={{ student.id }}">Record Payment</a>
+                    </td>
                 </tr>
             {% empty %}
                 <tr><td colspan="3">No students found for this class.</td></tr>
             {% endfor %}
         </tbody>
     </table>
-</body>
-</html>
+{% endblock %}

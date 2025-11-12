@@ -1,65 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Student Fee Detail</title>
-    <style>body{font-family:Arial,Helvetica,sans-serif;margin:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:8px;text-align:left}</style>
-</head>
-<body>
-        <nav style="margin-bottom:12px">
-            <a class="btn btn-outline-primary" href="{% url 'bursar_dashboard' %}">Home</a>
-            <a class="btn" href="javascript:history.back()">Back</a>
-            {% if current_term %}
-                <a class="btn" href="{% url 'bursar_unpaid_report' class_id=student.student_class.id term_id=current_term.id %}">Download Class Unpaid CSV</a>
-            {% endif %}
-        </nav>
+{% extends 'base.html' %}
+{% block title %}Student Fee Detail{% endblock %}
+{% block content %}
+<nav style="margin-bottom:12px">
+        <a class="btn btn-outline-primary" href="{% url 'bursar_dashboard' %}">Home</a>
+        <a class="btn" href="javascript:history.back()">Back</a>
+        {% if current_term %}
+                <a class="btn" href="{% url 'bursar_unpaid_report' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Class Unpaid (CSV)</a>
+                <a class="btn" href="{% url 'bursar_unpaid_report_pdf' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Class Unpaid (PDF)</a>
+        {% endif %}
+</nav>
 
-        <h1>Fees for {{ student.user.get_full_name }}</h1>
-        <p>Admission No: {{ student.admission_number }}</p>
-    <form method="get" action="">
-        <label>Select Term
-            <select name="term_id">
-                {% for t in terms %}
-                    <option value="{{ t.id }}" {% if current_term and t.id == current_term.id %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <button type="submit">Go</button>
-    </form>
+<h1 style="margin-top:0">Fees for {{ student.user.get_full_name }}</h1>
+<p class="muted">Admission No: {{ student.admission_number }} | Class: {{ student.student_class.name }}</p>
 
-    <h2>Fee Items ({{ current_term }})</h2>
-    {% if fees %}
-        <table>
-            <thead><tr><th>Type</th><th>Amount</th><th>Due</th><th>Description</th></tr></thead>
-            <tbody>
-                {% for f in fees %}
-                    <tr>
-                        <td>{{ f.get_fee_type_display }}</td>
-                        <td>{{ f.amount }}</td>
-                        <td>{{ f.due_date }}</td>
-                        <td>{{ f.description }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No fees defined for this term.</p>
-    {% endif %}
+<form method="get" class="row" style="gap:12px;align-items:flex-end">
+        <div class="col">
+                <label>Term
+                        <select name="term_id" onchange="this.form.submit()">
+                                <option value="">-- active --</option>
+                                {% for t in terms %}
+                                        <option value="{{ t.id }}" {% if current_term and current_term.id == t.id %}selected{% endif %}>{{ t.name }}</option>
+                                {% endfor %}
+                        </select>
+                </label>
+        </div>
+        <noscript><button class="btn" type="submit">Load</button></noscript>
+</form>
 
-    <h2>Payments</h2>
+<div class="row" style="margin-top:16px;gap:16px;flex-wrap:wrap">
+    <div class="card" style="flex:1 1 300px">
+        <h3 style="margin-top:0">Summary</h3>
+        <p>Total Fees: {{ total_fees }}</p>
+        <p>Total Paid: {{ total_paid }}</p>
+        <p>Balance: {{ balance }}</p>
+        {% if current_term %}
+            <p>
+                <a class="btn" href="{% url 'bursar_unpaid_report' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Unpaid CSV</a>
+                <a class="btn" href="{% url 'bursar_unpaid_report_pdf' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Unpaid PDF</a>
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="card" style="flex:2 1 480px">
+        <h3 style="margin-top:0">Fee Structure</h3>
+        {% if fees %}
+            <table>
+                <thead><tr><th>Type</th><th>Amount</th><th>Due</th><th>Description</th></tr></thead>
+                <tbody>
+                    {% for f in fees %}
+                        <tr>
+                            <td>{{ f.get_fee_type_display }}</td>
+                            <td>{{ f.amount }}</td>
+                            <td>{{ f.due_date }}</td>
+                            <td>{{ f.description }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No fees defined for this term.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-top:24px">
+    <h3 style="margin-top:0">Payments</h3>
     {% if payments %}
         <table>
-            <thead><tr><th>Receipt</th><th>Amount</th><th>Method</th><th>Date</th><th>Notes</th><th>Receipt</th></tr></thead>
+            <thead><tr><th>Receipt</th><th>Amount</th><th>Method</th><th>Date</th><th>Notes</th><th>PDF</th></tr></thead>
             <tbody>
                 {% for p in payments %}
                     <tr>
                         <td>{{ p.receipt_no }}</td>
                         <td>{{ p.amount_paid }}</td>
                         <td>{{ p.get_payment_method_display }}</td>
-                        <td>{{ p.payment_date }}</td>
-                        <td>{{ p.notes }}</td>
-                        <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}">PDF</a></td>
+                        <td>{{ p.payment_date|date:"Y-m-d H:i" }}</td>
+                        <td>{{ p.notes|default:'-' }}</td>
+                        <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}" class="btn btn-outline-primary" target="_blank">PDF</a></td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -67,10 +84,9 @@
     {% else %}
         <p>No payments recorded.</p>
     {% endif %}
+</div>
 
-    <h3>Totals</h3>
-    <p>Total Fees: {{ total_fees }}</p>
-    <p>Total Paid: {{ total_paid }}</p>
-    <p>Balance: {{ balance }}</p>
-</body>
-</html>
+<p style="margin-top:16px"><a href="{% url 'manage_payments' %}" class="btn">Back to Manage Payments</a></p>
+<p><a href="{% url 'manage_payments' %}?student_id={{ student.id }}" class="btn btn-success">Record Payment For This Student</a></p>
+
+{% endblock %}

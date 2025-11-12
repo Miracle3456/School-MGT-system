@@ -1,4 +1,3 @@
-
 import zipfile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -13,6 +12,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from io import BytesIO
 import csv
+from decimal import Decimal, InvalidOperation
 from .models import User, Student, Teacher, Class, Subject, Term, Mark, Comment, ClassFee, FeePayment
 
 
@@ -448,29 +448,44 @@ def enter_marks(request):
     classes = teacher.classes.all()
     subjects = teacher.subjects.all()
     terms = Term.objects.all()
-    
+    active_term = Term.objects.filter(is_active=True).first()
+
     if request.method == 'POST':
         student_id = request.POST.get('student_id')
         subject_id = request.POST.get('subject_id')
         term_id = request.POST.get('term_id')
         class_id = request.GET.get('class_id') or request.POST.get('class_id')
-        if not class_id:
-            messages.error(request, 'Class must be selected before entering marks.')
+
+        # Validate inputs
+        if not all([student_id, subject_id, term_id, class_id]):
+            messages.error(request, 'All fields are required.')
             return redirect('enter_marks')
+
+        try:
+            student = Student.objects.get(id=student_id)
+            subject = Subject.objects.get(id=subject_id)
+            term = Term.objects.get(id=term_id)
+            class_obj = Class.objects.get(id=class_id)
+        except (Student.DoesNotExist, Subject.DoesNotExist, Term.DoesNotExist, Class.DoesNotExist):
+            messages.error(request, 'Invalid selection. Please try again.')
+            return redirect('enter_marks')
+
+        # Save marks
         mark, created = Mark.objects.get_or_create(
-            student_id=student_id,
-            subject_id=subject_id,
-            term_id=term_id,
-            class_assigned_id=class_id,
+            student=student,
+            subject=subject,
+            term=term,
+            class_assigned=class_obj,
             defaults={'teacher': teacher}
         )
         mark.assignment_marks = request.POST.get('assignment_marks', 0)
         mark.midterm_marks = request.POST.get('midterm_marks', 0)
         mark.exam_marks = request.POST.get('exam_marks', 0)
         mark.save()
-        messages.success(request, 'Marks saved successfully')
+
+        messages.success(request, 'Marks saved successfully.')
         return redirect(f'{request.path}?class_id={class_id}')
-    
+
     # Get students for selected class
     selected_class_id = request.GET.get('class_id')
     students = Student.objects.filter(student_class_id=selected_class_id) if selected_class_id else []
@@ -479,7 +494,8 @@ def enter_marks(request):
         'classes': classes,
         'subjects': subjects,
         'terms': terms,
-        'students': students
+        'students': students,
+        'active_term': active_term,
     }
     return render(request, 'teacher/enter_marks.html', context)
 
@@ -617,6 +633,43 @@ def view_report(request, term_id):
         'average': round(average, 2)
     }
     return render(request, 'student/report.html', context)
+
+@login_required
+@user_passes_test(is_student)
+def student_my_fees(request):
+    student = Student.objects.get(user=request.user)
+    terms = Term.objects.all()
+    term_id = request.GET.get('term_id')
+    term = get_object_or_404(Term, id=term_id) if term_id else Term.objects.filter(is_active=True).first()
+
+    if term:
+        fees = ClassFee.objects.filter(
+            class_assigned=student.student_class,
+            term=term
+        )
+        payments = FeePayment.objects.filter(
+            student=student,
+            term=term
+        ).order_by('-payment_date')
+
+        total_fees = fees.aggregate(total=Sum('amount'))['total'] or 0
+        total_paid = payments.aggregate(total=Sum('amount_paid'))['total'] or 0
+        balance = total_fees - total_paid
+    else:
+        fees = payments = []
+        total_fees = total_paid = balance = 0
+
+    context = {
+        'student': student,
+        'terms': terms,
+        'current_term': term,
+        'fees': fees,
+        'payments': payments,
+        'total_fees': total_fees,
+        'total_paid': total_paid,
+        'balance': balance,
+    }
+    return render(request, 'student/fees.html', context)
 
 @login_required
 def generate_pdf_report(request, student_id, term_id):
@@ -828,16 +881,41 @@ def bursar_dashboard(request):
     return render(request, 'bursar/dashboard.html', context)
 
 @login_required
-@user_passes_test(is_bursar)
+@user_passes_test(lambda u: is_bursar(u) or is_admin(u))
 def manage_payments(request):
     active_term = Term.objects.filter(is_active=True).first()
+    prefill_student = None
+    prefill_summary = None
+    try:
+        prefill_student_id = int(request.GET.get('student_id')) if request.GET.get('student_id') else None
+    except (TypeError, ValueError):
+        prefill_student_id = None
+    if prefill_student_id:
+        prefill_student = Student.objects.filter(id=prefill_student_id).select_related('user', 'student_class').first()
+        if prefill_student and active_term:
+            expected = ClassFee.objects.filter(class_assigned=prefill_student.student_class, term=active_term).aggregate(total=Sum('amount'))['total'] or 0
+            paid = FeePayment.objects.filter(student=prefill_student, term=active_term).aggregate(total=Sum('amount_paid'))['total'] or 0
+            prefill_summary = {
+                'expected': expected,
+                'paid': paid,
+                'balance': expected - paid,
+            }
     
     if request.method == 'POST':
         student_id = request.POST.get('student_id')
-        amount = request.POST.get('amount')
+        amount_raw = request.POST.get('amount', '').strip()
         payment_method = request.POST.get('payment_method')
         transaction_reference = request.POST.get('transaction_reference')
         notes = request.POST.get('notes')
+        # Validate amount
+        try:
+            amount = Decimal(amount_raw)
+        except (InvalidOperation, TypeError):
+            messages.error(request, 'Please enter a valid amount.')
+            redirect_url = 'manage_payments'
+            if student_id:
+                return redirect(f"{request.path}?student_id={student_id}")
+            return redirect(redirect_url)
         
         payment = FeePayment.objects.create(
             student_id=student_id,
@@ -845,7 +923,7 @@ def manage_payments(request):
             amount_paid=amount,
             payment_method=payment_method,
             transaction_reference=transaction_reference,
-            processed_by=request.user,
+            processed_by=request.user,  # Always set to logged-in user for security
             notes=notes
         )
         messages.success(request, f'Payment recorded successfully. Receipt No: {payment.receipt_no}')
@@ -877,7 +955,11 @@ def manage_payments(request):
         'students': students,
         'fee_status': fee_status,
         'active_term': active_term,
-        'payment_methods': FeePayment.PAYMENT_METHOD_CHOICES
+        'payment_methods': FeePayment.PAYMENT_METHOD_CHOICES,
+        'classes': Class.objects.all(),
+        'prefill_student_id': prefill_student.id if prefill_student else None,
+        'prefill_student': prefill_student,
+        'prefill_summary': prefill_summary,
     }
     return render(request, 'bursar/manage_payments.html', context)
 
@@ -1054,4 +1136,62 @@ def unpaid_report(request, class_id, term_id):
     for r in rows:
         writer.writerow([r['admission'], r['name'], r['class'], r['term'], r['expected'], r['paid'], r['balance']])
 
+    return response
+
+
+@login_required
+@user_passes_test(lambda u: is_bursar(u) or is_admin(u))
+def unpaid_report_pdf(request, class_id, term_id):
+    """Generate a PDF report of students with outstanding balances for a class/term."""
+    class_obj = get_object_or_404(Class, id=class_id)
+    term = get_object_or_404(Term, id=term_id)
+
+    fee_items = ClassFee.objects.filter(class_assigned=class_obj, term=term)
+    total_expected = fee_items.aggregate(total=Sum('amount'))['total'] or 0
+
+    students = Student.objects.filter(student_class=class_obj).select_related('user')
+
+    rows = []
+    for s in students:
+        total_paid = FeePayment.objects.filter(student=s, term=term).aggregate(total=Sum('amount_paid'))['total'] or 0
+        balance = total_expected - total_paid
+        if balance > 0:
+            rows.append([
+                s.admission_number,
+                s.user.get_full_name(),
+                class_obj.name,
+                str(term),
+                f"{total_expected:,.2f}",
+                f"{total_paid:,.2f}",
+                f"{balance:,.2f}",
+            ])
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    title = Paragraph(f"<b>UNPAID FEES REPORT</b>", styles['Title'])
+    subtitle = Paragraph(f"Class: {class_obj.name} &nbsp;&nbsp; Term: {term}", styles['Normal'])
+    elements.extend([title, Spacer(1, 8), subtitle, Spacer(1, 12)])
+
+    data = [['Admission', 'Student Name', 'Class', 'Term', 'Expected', 'Paid', 'Balance']]
+    data.extend(rows)
+
+    table = Table(data, colWidths=['*', '*', 70, 70, 70, 70, 70])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+    ]))
+    elements.append(table)
+
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="unpaid_report_{class_obj.name}_{term.term}.pdf"'
     return response

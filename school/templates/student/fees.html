@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}My Fees & Payments{% endblock %}
+{% block content %}
+<nav style="margin-bottom:12px">
+  <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Dashboard</a>
+</nav>
+
+<h1 style="margin-top:0">My Fees & Payments</h1>
+<p class="muted">{{ student.user.get_full_name }} ({{ student.admission_number }}) — Class: {{ student.student_class.name }}</p>
+
+<form method="get" class="row" style="gap:12px;align-items:flex-end">
+  <div class="col">
+    <label>Term
+      <select name="term_id" onchange="this.form.submit()">
+        <option value="">-- active --</option>
+        {% for t in terms %}
+          <option value="{{ t.id }}" {% if current_term and current_term.id == t.id %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <noscript><button class="btn" type="submit">Load</button></noscript>
+</form>
+
+<div class="row" style="margin-top:16px;gap:16px;flex-wrap:wrap">
+  <div class="card" style="flex:1 1 300px">
+    <h3 style="margin-top:0">Summary</h3>
+    <p>Total Fees: {{ total_fees }}</p>
+    <p>Total Paid: {{ total_paid }}</p>
+    <p>Balance: {{ balance }}</p>
+  </div>
+
+  <div class="card" style="flex:2 1 480px">
+    <h3 style="margin-top:0">Fee Structure</h3>
+    {% if fees %}
+      <table>
+        <thead><tr><th>Type</th><th>Amount</th><th>Due</th><th>Description</th></tr></thead>
+        <tbody>
+          {% for f in fees %}
+            <tr>
+              <td>{{ f.get_fee_type_display }}</td>
+              <td>{{ f.amount }}</td>
+              <td>{{ f.due_date }}</td>
+              <td>{{ f.description }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No fees defined for this term.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px">
+  <h3 style="margin-top:0">Payments</h3>
+  {% if payments %}
+    <table>
+      <thead><tr><th>Receipt</th><th>Amount</th><th>Method</th><th>Date</th><th>Notes</th><th>PDF</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+          <tr>
+            <td>{{ p.receipt_no }}</td>
+            <td>{{ p.amount_paid }}</td>
+            <td>{{ p.get_payment_method_display }}</td>
+            <td>{{ p.payment_date|date:"Y-m-d H:i" }}</td>
+            <td>{{ p.notes|default:'-' }}</td>
+            <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}" class="btn btn-outline-primary" target="_blank">PDF</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No payments recorded.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -25,9 +25,11 @@ urlpatterns = [
     path('portal/admin/fees/', views.manage_fees, name='manage_fees'),
     path('portal/admin/fees/class/<int:class_id>/', views.class_fee_detail, name='class_fee_detail'),
     path('portal/admin/fees/class/<int:class_id>/unpaid/<int:term_id>/', views.unpaid_report, name='unpaid_report'),
+    path('portal/admin/fees/class/<int:class_id>/unpaid/<int:term_id>/pdf/', views.unpaid_report_pdf, name='unpaid_report_pdf'),
     path('portal/bursar/dashboard/', views.bursar_dashboard, name='bursar_dashboard'),
     path('portal/bursar/payments/', views.manage_payments, name='manage_payments'),
     path('portal/bursar/unpaid/class/<int:class_id>/term/<int:term_id>/', views.unpaid_report, name='bursar_unpaid_report'),
+    path('portal/bursar/unpaid/class/<int:class_id>/term/<int:term_id>/pdf/', views.unpaid_report_pdf, name='bursar_unpaid_report_pdf'),
     path('portal/bursar/student/<int:student_id>/fees/', views.student_fee_detail, name='student_fee_detail'),
     path('portal/bursar/payment/receipt/<int:payment_id>/', views.generate_fee_receipt, name='generate_fee_receipt'),
     # Class PDF report for teachers/admins
@@ -42,5 +44,6 @@ urlpatterns = [
     # Student URLs
     path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
     path('student/report/<int:term_id>/', views.view_report, name='view_report'),
+    path('student/fees/', views.student_my_fees, name='student_my_fees'),
     path('report/pdf/<int:student_id>/<int:term_id>/', views.generate_pdf_report, name='generate_pdf_report'),
 ]

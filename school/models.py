@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+from decimal import Decimal
+from django.utils import timezone
 
 class User(AbstractUser):
     USER_TYPE_CHOICES = (
@@ -177,9 +179,10 @@ class FeePayment(models.Model):
     )
     PAYMENT_METHOD_CHOICES = (
         ('cash', 'Cash'),
-        ('bank_transfer', 'Bank Transfer'),
-        ('cheque', 'Cheque'),
-        ('mobile_money', 'Mobile Money')
+        ('bank', 'Bank Transfer'),
+        ('mtn', 'MTN Mobile Money'),
+        ('airtel', 'Airtel Mobile Money'),
+        ('momo_pay', 'MoMo Pay'),
     )
     
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -190,8 +193,12 @@ class FeePayment(models.Model):
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='pending')
     receipt_no = models.CharField(max_length=20, unique=True)
     transaction_reference = models.CharField(max_length=50, blank=True)
-    processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
-                                   limit_choices_to={'user_type': 'bursar'})
+    processed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        limit_choices_to=models.Q(user_type__in=['bursar', 'admin'])
+    )
     notes = models.TextField(blank=True)
     
     class Meta:
@@ -211,22 +218,37 @@ class FeePayment(models.Model):
         total_fees = ClassFee.objects.filter(
             class_assigned=self.student.student_class,
             term=self.term
-        ).aggregate(total=models.Sum('amount'))['total'] or 0
+        ).aggregate(total=models.Sum('amount'))['total']
+        total_fees = total_fees if total_fees is not None else Decimal('0')
         
         total_paid = FeePayment.objects.filter(
             student=self.student,
             term=self.term
-        ).aggregate(paid=models.Sum('amount_paid'))['paid'] or 0
-        
-        total_paid += self.amount_paid  # Add current payment
+        ).aggregate(paid=models.Sum('amount_paid'))['paid']
+        total_paid = total_paid if total_paid is not None else Decimal('0')
+
+        # Ensure current amount is Decimal before arithmetic
+        current_payment = self.amount_paid
+        if isinstance(current_payment, str):
+            try:
+                current_payment = Decimal(current_payment)
+            except Exception:
+                current_payment = Decimal('0')
+        total_paid = Decimal(total_paid) + Decimal(current_payment)
         
         if total_paid >= total_fees:
             self.payment_status = 'paid'
         elif total_paid > 0:
             self.payment_status = 'partial'
-        elif self.due_date and self.due_date < timezone.now().date():
-            self.payment_status = 'overdue'
         else:
-            self.payment_status = 'pending'
+            # Determine overdue using the earliest due date among class fees for this term
+            earliest_due = ClassFee.objects.filter(
+                class_assigned=self.student.student_class,
+                term=self.term
+            ).order_by('due_date').values_list('due_date', flat=True).first()
+            if earliest_due and earliest_due < timezone.now().date():
+                self.payment_status = 'overdue'
+            else:
+                self.payment_status = 'pending'
             
         super().save(*args, **kwargs)
