@@ -831,7 +831,7 @@ def class_fee_detail(request, class_id):
     return render(request, 'admin/class_fee_detail.html', context)
 
 @login_required
-@user_passes_test(is_bursar)
+@user_passes_test(lambda u: is_bursar(u) or is_admin(u))
 def bursar_dashboard(request):
     active_term = Term.objects.filter(is_active=True).first()
     
@@ -865,6 +865,10 @@ def bursar_dashboard(request):
             total=Sum('amount_paid'),
             count=Count('id')
         )
+        # Labels and values for chart
+        method_label_map = dict(FeePayment.PAYMENT_METHOD_CHOICES)
+        method_labels = [method_label_map.get(pm['payment_method'], pm['payment_method']) for pm in payment_methods]
+        method_values = [float(pm['total'] or 0) for pm in payment_methods]
         
         # Class-wise collection status
         class_stats = []
@@ -879,10 +883,22 @@ def bursar_dashboard(request):
                 'collected': class_collected,
                 'rate': (class_collected / class_expected * 100) if class_expected > 0 else 0
             })
+        # Daily collections (last 7 days)
+        today = timezone.now().date()
+        last_7 = [today - timezone.timedelta(days=i) for i in range(6, -1, -1)]
+        daily_labels = [d.strftime('%d %b') for d in last_7]
+        daily_values = []
+        for d in last_7:
+            amt = term_payments.filter(payment_date__date=d).aggregate(total=Sum('amount_paid'))['total'] or 0
+            daily_values.append(float(amt))
     else:
         today_total = week_total = total_expected = total_collected = collection_rate = 0
         payment_methods = []
         class_stats = []
+        method_labels = []
+        method_values = []
+        daily_labels = []
+        daily_values = []
     
     context = {
         'active_term': active_term,
@@ -893,7 +909,11 @@ def bursar_dashboard(request):
         'collection_rate': round(collection_rate, 2),
         'payment_methods': payment_methods,
         'class_stats': class_stats,
-        'recent_payments': FeePayment.objects.select_related('student', 'term').order_by('-payment_date')[:10]
+        'recent_payments': FeePayment.objects.select_related('student', 'term').order_by('-payment_date')[:10],
+        'daily_labels': json.dumps(daily_labels),
+        'daily_values': json.dumps(daily_values),
+        'method_labels': json.dumps(method_labels),
+        'method_values': json.dumps(method_values),
     }
     return render(request, 'bursar/dashboard.html', context)
 
