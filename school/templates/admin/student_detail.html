@@ -10,7 +10,8 @@
   <div class="row" style="align-items:center;gap:16px">
     <div class="col" style="flex:0 0 120px">
       {% if student.photo %}
-        <img src="{{ student.photo.url }}" alt="{{ student.user.get_full_name }}" class="thumb" data-full="{{ student.photo.url }}" style="width:120px;height:120px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb;cursor:pointer" />
+        <!-- Debug: Photo path = {{ student.photo }}, URL = {{ student.photo.url }} -->
+        <img src="{{ student.photo.url }}" alt="{{ student.user.get_full_name }}" class="thumb" data-full="{{ student.photo.url }}" style="width:120px;height:120px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb;cursor:pointer" onerror="this.parentElement.innerHTML='<div style=\'width:120px;height:120px;border-radius:8px;background:#fee;display:flex;align-items:center;justify-content:center;color:#c00;font-size:10px;text-align:center\'>Image Failed<br>{{ student.photo.url }}</div>'" />
       {% else %}
         <div style="width:120px;height:120px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#6b7280">No Photo</div>
       {% endif %}

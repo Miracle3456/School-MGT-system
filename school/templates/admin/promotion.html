@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Automatic Promotion{% endblock %}
+{% block content %}
+  <div class="mb-3">
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">Home</a>
+  </div>
+  <h2>Automatic Student Promotion</h2>
+  <p class="muted">This will evaluate student averages for the selected academic year and promote/repeat/graduated accordingly. Previous data remains tied to its year.</p>
+
+  <form method="post" class="card" style="margin-top:12px;">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col">
+        <label>Source Academic Year</label>
+        <input type="text" name="source_year" value="{{ source_year }}" />
+      </div>
+      <div class="col">
+        <label>Target Academic Year</label>
+        <input type="text" name="target_year" value="{{ target_year }}" />
+      </div>
+      <div class="col">
+        <label>Activate Target Year</label>
+        <div><input type="checkbox" name="activate_target" checked /> <span class="muted">Set as active session</span></div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-success" type="submit">Run Automatic Promotion</button>
+    </div>
+  </form>
+
+  <h3 style="margin-top:24px">Existing Academic Years</h3>
+  <table>
+    <thead><tr><th>Year</th><th>Active</th></tr></thead>
+    <tbody>
+      {% for y in years %}
+        <tr><td>{{ y.code }}</td><td>{{ y.is_active|yesno:"Yes,No" }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">No years created yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

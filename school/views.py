@@ -14,7 +14,7 @@ from io import BytesIO
 import csv
 import json
 from decimal import Decimal, InvalidOperation
-from .models import User, Student, Teacher, Class, Subject, Term, Mark, Comment, ClassFee, FeePayment
+from .models import User, Student, Teacher, Class, Subject, Term, Mark, Comment, ClassFee, FeePayment, AcademicYear, Enrollment
 
 
 @login_required
@@ -1280,3 +1280,162 @@ def unpaid_report_pdf(request, class_id, term_id):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="unpaid_report_{class_obj.name}_{term.term}.pdf"'
     return response
+
+
+@login_required
+@user_passes_test(is_admin)
+def promotion_view(request):
+    """Run automatic student promotion for a source academic year into the next year.
+    Creates/activates the target year, creates class shells for that year if missing,
+    and generates Enrollment records for each student with status promoted/repeating/graduated.
+    """
+    # Determine default source year from latest active term or max class year
+    def guess_current_year():
+        t = Term.objects.filter(is_active=True).first()
+        if t:
+            return t.academic_year
+        c = Class.objects.order_by('-academic_year').values_list('academic_year', flat=True).first()
+        return c or timezone.now().strftime('%Y/%Y')
+
+    if request.method == 'GET':
+        source_year = request.GET.get('source_year') or guess_current_year()
+        next_year = AcademicYear.next_code(source_year)
+        years = AcademicYear.objects.all().order_by('-code')
+        return render(request, 'admin/promotion.html', {
+            'source_year': source_year,
+            'target_year': next_year,
+            'years': years,
+        })
+
+    # POST – run promotion
+    source_year = request.POST.get('source_year')
+    target_year_code = request.POST.get('target_year') or AcademicYear.next_code(source_year)
+
+    # Ensure target AcademicYear exists and is active
+    target_year, _ = AcademicYear.objects.get_or_create(code=target_year_code, defaults={'is_active': True})
+
+    # Optionally deactivate other years and activate this one
+    if request.POST.get('activate_target') == 'on':
+        AcademicYear.objects.update(is_active=False)
+        target_year.is_active = True
+        target_year.save()
+
+    # Ensure classes exist for target year; copy basic metadata and promotion_rank
+    current_classes = list(Class.objects.filter(academic_year=source_year))
+    existing_target = {(c.name, c.level): c for c in Class.objects.filter(academic_year=target_year_code)}
+    for c in current_classes:
+        key = (c.name, c.level)
+        if key not in existing_target:
+            Class.objects.create(
+                name=c.name,
+                level=c.level,
+                class_teacher=None,
+                academic_year=target_year_code,
+                promotion_rank=c.promotion_rank,
+            )
+    target_classes = { (c.name, c.level, c.promotion_rank): c for c in Class.objects.filter(academic_year=target_year_code) }
+
+    # Build helper to resolve next class by promotion_rank
+    def next_class_for(current: Class):
+        # Prefer rank +1 match within target year
+        for c in target_classes.values():
+            if c.promotion_rank == current.promotion_rank + 1:
+                return c
+        return None
+
+    # Compute per-student averages for source year
+    terms_in_year = Term.objects.filter(academic_year=source_year)
+    students = Student.objects.select_related('user', 'student_class').filter(student_class__academic_year=source_year)
+
+    promoted = 0
+    repeating = 0
+    graduated = 0
+    results = []
+
+    for s in students:
+        avg = Mark.objects.filter(student=s, term__in=terms_in_year).aggregate(a=Avg('total_marks'))['a'] or 0
+        current_class = s.student_class
+        nxt = next_class_for(current_class) if current_class else None
+        if avg >= 50 and nxt is not None:
+            status = 'promoted'
+            new_class = nxt
+            promoted += 1
+        elif avg >= 50 and nxt is None:
+            status = 'graduated'
+            new_class = None
+            graduated += 1
+        else:
+            status = 'repeating'
+            # Repeat same class in target year (class with same promotion_rank)
+            same_rank = None
+            for c in target_classes.values():
+                if current_class and c.promotion_rank == current_class.promotion_rank:
+                    same_rank = c
+                    break
+            new_class = same_rank
+            repeating += 1
+
+        # Create/Update enrollment for target year
+        enr, _ = Enrollment.objects.update_or_create(
+            student=s,
+            academic_year=target_year,
+            defaults={
+                'class_assigned': new_class,
+                'status': status,
+                'average_score': avg,
+            }
+        )
+
+        # Update student's current placement
+        if status == 'graduated':
+            s.is_graduated = True
+            s.graduation_year = target_year_code
+            s.student_class = None
+        else:
+            s.is_graduated = False
+            s.graduation_year = None
+            s.student_class = new_class
+        s.save(update_fields=['is_graduated', 'graduation_year', 'student_class'])
+
+        results.append({
+            'student': s.id,
+            'average': float(avg),
+            'from_class': current_class.name if current_class else '-',
+            'to_class': new_class.name if new_class else ('Graduated' if status=='graduated' else '-'),
+            'status': status,
+        })
+
+    # Build class performance summary for source year
+    class_stats = Mark.objects.filter(term__academic_year=source_year).values('class_assigned__name').annotate(average_score=Avg('total_marks'), count=Count('student', distinct=True)).order_by('class_assigned__name')
+
+    request.session['promotion_report'] = {
+        'source_year': source_year,
+        'target_year': target_year_code,
+        'promoted': promoted,
+        'repeating': repeating,
+        'graduated': graduated,
+        'class_stats': list(class_stats),
+    }
+
+    messages.success(request, f"Promotion completed: {promoted} promoted, {repeating} repeating, {graduated} graduated.")
+    return redirect('promotion_report')
+
+
+@login_required
+@user_passes_test(is_admin)
+def promotion_report(request):
+    data = request.session.get('promotion_report') or {}
+    source_year = data.get('source_year')
+    target_year = data.get('target_year')
+    promoted = data.get('promoted', 0)
+    repeating = data.get('repeating', 0)
+    graduated = data.get('graduated', 0)
+    class_stats = data.get('class_stats', [])
+    return render(request, 'admin/promotion_report.html', {
+        'source_year': source_year,
+        'target_year': target_year,
+        'promoted': promoted,
+        'repeating': repeating,
+        'graduated': graduated,
+        'class_stats': class_stats,
+    })

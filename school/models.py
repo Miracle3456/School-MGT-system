@@ -18,12 +18,33 @@ class User(AbstractUser):
     class Meta:
         db_table = 'users'
 
+class AcademicYear(models.Model):
+    """Represents an academic session like '2024/2025'."""
+    code = models.CharField(max_length=9, unique=True)
+    is_active = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.code
+
+    @staticmethod
+    def next_code(from_code: str) -> str:
+        try:
+            start = int(from_code.split('/')[0])
+            return f"{start+1}/{start+2}"
+        except Exception:
+            return from_code
+
+    class Meta:
+        db_table = 'academic_years'
+
+
 class Class(models.Model):
     name = models.CharField(max_length=50)
     level = models.CharField(max_length=20)
     class_teacher = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
                                       limit_choices_to={'user_type': 'teacher'})
     academic_year = models.CharField(max_length=9, default='2024/2025')
+    promotion_rank = models.IntegerField(default=0, help_text="Order used for automatic promotion across years")
     
     def __str__(self):
         return self.name
@@ -51,6 +72,9 @@ class Student(models.Model):
     guardian_name = models.CharField(max_length=100)
     guardian_phone = models.CharField(max_length=15)
     photo = models.ImageField(upload_to='students/photos/', blank=True, null=True)
+    # Optional: mark as graduated and the year they graduated
+    is_graduated = models.BooleanField(default=False)
+    graduation_year = models.CharField(max_length=9, blank=True, null=True)
     
     def __str__(self):
         return f"{self.admission_number} - {self.user.get_full_name()}"
@@ -89,6 +113,31 @@ class Term(models.Model):
     class Meta:
         db_table = 'terms'
         unique_together = ['term', 'academic_year']
+
+
+class Enrollment(models.Model):
+    """Tracks a student's placement per academic year.
+    Keeps historical records of promotions/repeats/graduations.
+    """
+    STATUS_CHOICES = (
+        ('enrolled', 'Enrolled'),
+        ('promoted', 'Promoted'),
+        ('repeating', 'Repeating'),
+        ('graduated', 'Graduated'),
+    )
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
+    class_assigned = models.ForeignKey(Class, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='enrolled')
+    average_score = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    override_status = models.CharField(max_length=10, choices=STATUS_CHOICES, blank=True, null=True)
+    override_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'enrollments'
+        unique_together = ['student', 'academic_year']
 
 class Mark(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)

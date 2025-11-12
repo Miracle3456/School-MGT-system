@@ -23,6 +23,10 @@ urlpatterns = [
     path('portal/admin/student/<int:student_id>/', views.admin_view_student, name='admin_view_student'),
     path('portal/admin/teachers/', views.manage_teachers, name='manage_teachers'),
     path('portal/search/students/', views.search_students, name='search_students'),
+
+    # Promotion URLs
+    path('portal/admin/promotion/', views.promotion_view, name='promotion'),
+    path('portal/admin/promotion/report/', views.promotion_report, name='promotion_report'),
     
     # Fee Management URLs
     path('portal/admin/fees/', views.manage_fees, name='manage_fees'),

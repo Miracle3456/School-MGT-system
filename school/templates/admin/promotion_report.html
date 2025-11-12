@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Promotion Report{% endblock %}
+{% block content %}
+  <div class="mb-3">
+    <a href="{% url 'promotion' %}" class="btn btn-outline-primary">Back</a>
+  </div>
+  <h2>Promotion Report</h2>
+  <p>From <strong>{{ source_year }}</strong> to <strong>{{ target_year }}</strong></p>
+  <div class="row" style="margin-top:12px">
+    <div class="col card">
+      <h3>{{ promoted }}</h3><div class="muted">Promoted</div>
+    </div>
+    <div class="col card">
+      <h3>{{ repeating }}</h3><div class="muted">Repeating</div>
+    </div>
+    <div class="col card">
+      <h3>{{ graduated }}</h3><div class="muted">Graduated</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:24px">Average Class Performance ({{ source_year }})</h3>
+  <table>
+    <thead><tr><th>Class</th><th>Average Score</th><th>Students</th></tr></thead>
+    <tbody>
+      {% for s in class_stats %}
+        <tr>
+          <td>{{ s.class_assigned__name }}</td>
+          <td>{{ s.average_score|floatformat:2 }}</td>
+          <td>{{ s.count }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="3">No data found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

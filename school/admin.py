@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import User, Class, Subject, Student, Teacher, Term, Mark, Comment
+from .models import User, Class, Subject, Student, Teacher, Term, Mark, Comment, AcademicYear, Enrollment
 
 
 @admin.register(User)
@@ -22,7 +22,7 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(Class)
 class ClassAdmin(admin.ModelAdmin):
-    list_display = ['name', 'level', 'class_teacher', 'academic_year']
+    list_display = ['name', 'level', 'promotion_rank', 'class_teacher', 'academic_year']
     list_filter = ['level', 'academic_year']
 
 @admin.register(Subject)
@@ -57,3 +57,14 @@ class CommentAdmin(admin.ModelAdmin):
     list_display = ['student', 'term', 'teacher', 'created_at']
     list_filter = ['term']
     search_fields = ['student__admission_number']
+
+@admin.register(AcademicYear)
+class AcademicYearAdmin(admin.ModelAdmin):
+    list_display = ['code', 'is_active']
+    list_filter = ['is_active']
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(admin.ModelAdmin):
+    list_display = ['student', 'academic_year', 'class_assigned', 'status', 'average_score', 'override_status']
+    list_filter = ['academic_year', 'status']
+    search_fields = ['student__admission_number', 'student__user__first_name', 'student__user__last_name']
