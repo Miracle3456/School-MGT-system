@@ -66,22 +66,6 @@ term_id: optional for teacher (PDF link)
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
   input.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(search, 220); });
   list.addEventListener('mouseover', (e)=>{ const row=e.target.closest('.result-row'); if(!row) return; active=parseInt(row.getAttribute('data-idx')); render(input.value.trim()); });
-  list.addEventListener('click', (e)=>{
-    // If clicking a button directly, let it navigate
-    const btn = e.target.closest('.actions a');
-    if(btn) { 
-      e.stopPropagation();
-      return; // Let the link work normally
-    }
-    // Otherwise, navigate to the first action button of the clicked row
-    const row = e.target.closest('.result-row');
-    if(row) {
-      const firstBtn = row.querySelector('.actions a');
-      if(firstBtn) { 
-        window.location = firstBtn.getAttribute('href');
-      }
-    }
-  });
   document.addEventListener('keydown', (e)=>{
     if(overlay.style.display!=='flex') return;
     if(e.key==='ArrowDown'){ e.preventDefault(); if(items.length){ active=(active+1)%items.length; render(input.value.trim()); }}
