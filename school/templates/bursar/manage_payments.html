@@ -135,9 +135,9 @@ function loadStudentBalance() {
   
   info.innerHTML = `
     <strong>${name}</strong> (${admission}) — Class: ${className}<br/>
-    <span style="color:#60a5fa">Total Due: ${data.total_fees.toFixed(2)}</span> | 
-    <span style="color:#34d399">Paid: ${data.total_paid.toFixed(2)}</span> | 
-    <span style="color:${data.balance > 0 ? '#fbbf24' : '#34d399'}">Balance: ${data.balance.toFixed(2)}</span>
+    <span style="color:#60a5fa">Total Due: ${data.total_fees.toFixed(2)} shs</span> | 
+    <span style="color:#34d399">Paid: ${data.total_paid.toFixed(2)} shs</span> | 
+    <span style="color:${data.balance > 0 ? '#fbbf24' : '#34d399'}">Balance: ${data.balance.toFixed(2)} shs</span>
   `;
   display.style.display = 'block';
 }

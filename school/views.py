@@ -1062,7 +1062,7 @@ def generate_fee_receipt(request, payment_id):
     # Payment Details Table
     data = [
         ['Description', 'Amount'],
-        ['Term Fees Payment', f'${payment.amount_paid:,.2f}']
+        ['Term Fees Payment', f'{payment.amount_paid:,.2f} shs']
     ]
     
     # Get current fee status
@@ -1079,9 +1079,9 @@ def generate_fee_receipt(request, payment_id):
     balance = total_fees - total_paid
     
     data.extend([
-        ['Total Term Fees', f'${total_fees:,.2f}'],
-        ['Total Paid to Date', f'${total_paid:,.2f}'],
-        ['Balance', f'${balance:,.2f}']
+        ['Total Term Fees', f'{total_fees:,.2f} shs'],
+        ['Total Paid to Date', f'{total_paid:,.2f} shs'],
+        ['Balance', f'{balance:,.2f} shs']
     ])
     
     table = Table(data, colWidths=['*', 100])

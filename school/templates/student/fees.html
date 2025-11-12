@@ -25,9 +25,9 @@
 <div class="row" style="margin-top:16px;gap:16px;flex-wrap:wrap">
   <div class="card" style="flex:1 1 300px">
     <h3 style="margin-top:0">Summary</h3>
-    <p>Total Fees: {{ total_fees }}</p>
-    <p>Total Paid: {{ total_paid }}</p>
-    <p>Balance: {{ balance }}</p>
+    <p>Total Fees: {{ total_fees }} shs</p>
+    <p>Total Paid: {{ total_paid }} shs</p>
+    <p>Balance: {{ balance }} shs</p>
   </div>
 
   <div class="card" style="flex:2 1 480px">
@@ -39,7 +39,7 @@
           {% for f in fees %}
             <tr>
               <td>{{ f.get_fee_type_display }}</td>
-              <td>{{ f.amount }}</td>
+              <td>{{ f.amount }} shs</td>
               <td>{{ f.due_date }}</td>
               <td>{{ f.description }}</td>
             </tr>
@@ -61,7 +61,7 @@
         {% for p in payments %}
           <tr>
             <td>{{ p.receipt_no }}</td>
-            <td>{{ p.amount_paid }}</td>
+            <td>{{ p.amount_paid }} shs</td>
             <td>{{ p.get_payment_method_display }}</td>
             <td>{{ p.payment_date|date:"Y-m-d H:i" }}</td>
             <td>{{ p.notes|default:'-' }}</td>

@@ -168,7 +168,7 @@ class ClassFee(models.Model):
         unique_together = ['class_assigned', 'term', 'fee_type']
         
     def __str__(self):
-        return f"{self.class_assigned} - {self.term} - {self.get_fee_type_display()} (${self.amount})"
+        return f"{self.class_assigned} - {self.term} - {self.get_fee_type_display()} ({self.amount} shs)"
         
 class FeePayment(models.Model):
     PAYMENT_STATUS_CHOICES = (

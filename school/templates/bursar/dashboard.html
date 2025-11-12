@@ -59,7 +59,7 @@
                     <tr>
                         <td>{{ p.receipt_no }}</td>
                         <td>{{ p.student.user.get_full_name }}</td>
-                        <td>{{ p.amount_paid }}</td>
+                        <td>{{ p.amount_paid }} shs</td>
                         <td>{{ p.payment_date }}</td>
                         <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}">Receipt</a></td>
                     </tr>
