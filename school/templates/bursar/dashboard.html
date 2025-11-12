@@ -2,71 +2,106 @@
 {% block title %}Bursar Dashboard{% endblock %}
 {% block content %}
     <h1 style="margin-top:0">Bursar Dashboard</h1>
-    <p>Active Term: {{ active_term }}</p>
+    <p class="muted">Active Term: {{ active_term }}</p>
 
-    <section style="margin-top:8px">
-        <h2>Collections</h2>
-        <p>Today: {{ today_total }}</p>
-        <p>This Week: {{ week_total }}</p>
-        <p>Term Expected: {{ total_expected }}</p>
-        <p>Term Collected: {{ total_collected }}</p>
-        <p>Collection Rate: {{ collection_rate }}%</p>
-    </section>
+    <div class="row" style="margin-top:8px">
+        <div class="card col" style="min-width:200px">
+            <div class="muted">Today's Collection</div>
+            <div style="font-size:22px;font-weight:700">{{ today_total }} shs</div>
+        </div>
+        <div class="card col" style="min-width:200px">
+            <div class="muted">This Week</div>
+            <div style="font-size:22px;font-weight:700">{{ week_total }} shs</div>
+        </div>
+        <div class="card col" style="min-width:200px">
+            <div class="muted">Term Expected</div>
+            <div style="font-size:22px;font-weight:700">{{ total_expected }} shs</div>
+        </div>
+        <div class="card col" style="min-width:200px">
+            <div class="muted">Term Collected</div>
+            <div style="font-size:22px;font-weight:700">{{ total_collected }} shs</div>
+            <div class="muted" style="margin-top:6px">Rate: {{ collection_rate }}%</div>
+        </div>
+    </div>
 
-    <section style="margin-top:24px">
-        <h2>Payment Methods</h2>
-        <table>
-            <thead><tr><th>Method</th><th>Count</th><th>Total</th></tr></thead>
-            <tbody>
-                {% for pm in payment_methods %}
-                    <tr>
-                        <td>{{ pm.payment_method }}</td>
-                        <td>{{ pm.count }}</td>
-                        <td>{{ pm.total }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="3">No payments recorded.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+    <div class="row" style="margin-top:16px">
+        <div class="card col" style="min-width:320px">
+            <h3 style="margin-top:0">Daily Collections</h3>
+            <canvas id="dailyChart" height="140"></canvas>
+        </div>
+        <div class="card col" style="min-width:320px">
+            <h3 style="margin-top:0">By Payment Method</h3>
+            <canvas id="methodChart" height="140"></canvas>
+        </div>
+    </div>
 
-    <section style="margin-top:24px">
-        <h2>Class Statistics</h2>
-        <table>
-            <thead><tr><th>Class</th><th>Expected</th><th>Collected</th><th>Rate</th></tr></thead>
-            <tbody>
-                {% for cs in class_stats %}
-                    <tr>
-                        <td>{{ cs.class.name }}</td>
-                        <td>{{ cs.expected }}</td>
-                        <td>{{ cs.collected }}</td>
-                        <td>{{ cs.rate|floatformat:2 }}%</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="4">No class stats available.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+    <div class="row" style="margin-top:16px">
+        <div class="card col" style="flex:2 1 480px">
+            <h3 style="margin-top:0">Class Statistics</h3>
+            <table>
+                <thead><tr><th>Class</th><th>Expected</th><th>Collected</th><th>Rate</th></tr></thead>
+                <tbody>
+                    {% for cs in class_stats %}
+                        <tr>
+                            <td>{{ cs.class.name }}</td>
+                            <td>{{ cs.expected }} shs</td>
+                            <td>{{ cs.collected }} shs</td>
+                            <td>
+                                <div style="background:#f3f4f6;border-radius:999px;height:8px;position:relative">
+                                    <div style="background:#10b981;height:8px;border-radius:999px;width: {{ cs.rate|floatformat:0 }}%"></div>
+                                </div>
+                                <span class="muted">{{ cs.rate|floatformat:2 }}%</span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">No class stats available.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card col" style="flex:1 1 320px">
+            <h3 style="margin-top:0">Recent Payments</h3>
+            <table>
+                <thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Date</th></tr></thead>
+                <tbody>
+                    {% for p in recent_payments %}
+                        <tr>
+                            <td>{{ p.receipt_no }}</td>
+                            <td>{{ p.student.user.get_full_name }}</td>
+                            <td>{{ p.amount_paid }} shs</td>
+                            <td>{{ p.payment_date|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4">No payments recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <section>
-        <h2>Recent Payments</h2>
-        <table>
-            <thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Date</th><th></th></tr></thead>
-            <tbody>
-                {% for p in recent_payments %}
-                    <tr>
-                        <td>{{ p.receipt_no }}</td>
-                        <td>{{ p.student.user.get_full_name }}</td>
-                        <td>{{ p.amount_paid }} shs</td>
-                        <td>{{ p.payment_date }}</td>
-                        <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}">Receipt</a></td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="5">No payments recorded yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const dailyLabels = JSON.parse('{{ daily_labels|safe }}');
+        const dailyValues = JSON.parse('{{ daily_values|safe }}');
+        const methodLabels = JSON.parse('{{ method_labels|safe }}');
+        const methodValues = JSON.parse('{{ method_values|safe }}');
+
+        const ctx1 = document.getElementById('dailyChart');
+        if (ctx1 && dailyLabels && dailyValues) {
+            new Chart(ctx1, {
+                type: 'line',
+                data: { labels: dailyLabels, datasets: [{ label: 'Collections (shs)', data: dailyValues, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.1)', tension:.3, fill:true }] },
+                options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+            });
+        }
+
+        const ctx2 = document.getElementById('methodChart');
+        if (ctx2 && methodLabels && methodValues) {
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: { labels: methodLabels, datasets: [{ data: methodValues, backgroundColor:['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6'] }] },
+                options: { plugins:{ legend:{ position:'bottom' } } }
+            });
+        }
+    </script>
 {% endblock %}

@@ -24,13 +24,17 @@ header nav a:hover{background:#eff6ff;border-color:var(--border)}
 .col{flex:1 1 240px}
 
 /* Buttons */
-.btn{display:inline-block;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:10px 16px;text-decoration:none;cursor:pointer;font-size:14px;font-weight:500}
-.btn:hover{filter:brightness(1.08)}
-.btn-outline-primary{background:transparent;color:var(--accent);border:1px solid #d1d5db}
-.btn-warning{background:#f59e0b}
-.btn-info{background:#06b6d4}
+.btn{display:inline-block;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;text-decoration:none;cursor:pointer;font-size:14px;font-weight:600;line-height:1}
+.btn:hover{filter:brightness(0.95)}
+.btn:focus{outline:none;box-shadow:0 0 0 3px rgba(37,99,235,0.25)}
+.btn[disabled], .btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-outline-primary{background:#fff;color:#1f2937;border:1px solid #d1d5db}
+.btn-outline-primary:hover{background:#f9fafb}
+.btn-warning{background:#f59e0b;color:#111}
+.btn-info{background:#0ea5e9}
 .btn-danger{background:#ef4444}
 .btn-success{background:#10b981}
+.btn-secondary{background:#6b7280}
 
 /* Forms */
 label{
