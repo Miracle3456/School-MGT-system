@@ -1,102 +1,117 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% block title %}Admin Dashboard{% endblock %}
 {% block content %}
   {% include 'partials/student_search_modal.html' with context_key='admin' term_id=active_term.id %}
-  <div class="mb-3">
-    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
-  </div>
-  <h2>Admin dashboard</h2>
-  <div style="margin:12px 0"><button class="btn btn-outline-primary" type="button" onclick="openStudentSearch()">🔍 Search Students (Ctrl+K)</button></div>
-  <div class="row" style="margin-top:12px">
-    <div class="col card">
-      <h3>{{ total_students }}</h3>
-      <div class="muted">Total students</div>
+  
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Admin Dashboard</h1>
+      <p class="content-subtitle">Welcome back! Here's what's happening today.</p>
     </div>
-    <div class="col card">
-      <h3>{{ total_teachers }}</h3>
-      <div class="muted">Total teachers</div>
-    </div>
-    <div class="col card">
-      <h3>{{ total_classes }}</h3>
-      <div class="muted">Total classes</div>
-    </div>
-    <div class="col card">
-      <h3>{{ total_subjects }}</h3>
-      <div class="muted">Total subjects</div>
-    </div>
+    <button class="btn btn-primary" type="button" onclick="openStudentSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Search Students (Ctrl+K)
+    </button>
   </div>
 
-  <p style="margin-top:16px"><a class="btn" href="{% url 'manage_students' %}">Manage students</a>
-  <a class="btn" href="{% url 'manage_teachers' %}" style="background:#10b981">Manage teachers</a></p>
-  <p style="margin-top:8px">
-    <a class="btn" href="{% url 'manage_fees' %}" style="background:#f97316">Manage Fees</a>
-    <a class="btn" href="{% url 'bursar_dashboard' %}" style="background:#6366f1">Bursar Dashboard</a>
-    <a class="btn" href="{% url 'promotion' %}" style="background:#8b5cf6">Student Promotion</a>
-  </p>
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ total_students }}</div>
+      <div class="stat-label">Total Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_teachers }}</div>
+      <div class="stat-label">Total Teachers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_classes }}</div>
+      <div class="stat-label">Total Classes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ total_subjects }}</div>
+      <div class="stat-label">Total Subjects</div>
+    </div>
+  </div>
 
-  <h3 style="margin-top:24px">Batch Reports</h3>
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-auto">
-      <label for="batch_class_id">Grade/Class</label>
-      <select name="batch_class_id" id="batch_class_id" class="form-select">
-        {% for c in classes %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
+  <!-- Quick Actions -->
+  <div class="card" style="margin-bottom:24px">
+    <h3 style="margin-bottom:16px;font-size:16px;font-weight:600">Quick Actions</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a class="btn btn-primary" href="{% url 'manage_students' %}">Manage Students</a>
+      <a class="btn btn-success" href="{% url 'manage_teachers' %}">Manage Teachers</a>
+      <a class="btn btn-warning" href="{% url 'manage_fees' %}">Manage Fees</a>
+      <a class="btn btn-outline" href="{% url 'bursar_dashboard' %}">Bursar Dashboard</a>
+      <a class="btn btn-purple" href="{% url 'promotion' %}">Student Promotion</a>
     </div>
-    <div class="col-auto">
-      <label for="batch_term_id">Term</label>
-      <select name="batch_term_id" id="batch_term_id" class="form-select">
-        {% for t in terms %}
-          <option value="{{ t.id }}">{{ t }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <label for="batch_subject_id">Subject</label>
-      <select name="batch_subject_id" id="batch_subject_id" class="form-select">
-        <option value="">All Subjects</option>
-        {% for s in subjects %}
-          <option value="{{ s.id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <button type="button" class="btn btn-warning" onclick="var c=document.getElementById('batch_class_id').value;var t=document.getElementById('batch_term_id').value;var s=document.getElementById('batch_subject_id').value;if(c&&t){var url='{% url 'batch_student_reports_zip' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download All Student Reports (ZIP)</button>
-    </div>
-  </form>
+  </div>
 
-  <!-- Search modal handled by included partial -->
+  <!-- Reports Section -->
+  <div class="card">
+    <h3 style="margin-bottom:16px;font-size:16px;font-weight:600">Generate Reports</h3>
+    
+    <div style="margin-bottom:24px">
+      <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--muted)">Batch Student Reports</h4>
+      <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Grade/Class</label>
+          <select name="batch_class_id" id="batch_class_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for c in classes %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Term</label>
+          <select name="batch_term_id" id="batch_term_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for t in terms %}
+              <option value="{{ t.id }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Subject</label>
+          <select name="batch_subject_id" id="batch_subject_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All Subjects</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" class="btn btn-warning" onclick="var c=document.getElementById('batch_class_id').value;var t=document.getElementById('batch_term_id').value;var s=document.getElementById('batch_subject_id').value;if(c&&t){var url='{% url 'batch_student_reports_zip' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download ZIP</button>
+      </form>
+    </div>
 
-  <h3 style="margin-top:24px">Class Reports</h3>
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-auto">
-      <label for="class_id">Grade/Class</label>
-      <select name="class_id" id="class_id" class="form-select">
-        {% for c in classes %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
+    <div>
+      <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--muted)">Class Performance Report</h4>
+      <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Grade/Class</label>
+          <select name="class_id" id="class_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for c in classes %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Term</label>
+          <select name="term_id" id="term_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for t in terms %}
+              <option value="{{ t.id }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Subject</label>
+          <select name="subject_id" id="subject_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All Subjects</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="var c=document.getElementById('class_id').value;var t=document.getElementById('term_id').value;var s=document.getElementById('subject_id').value;if(c&&t){var url='{% url 'class_pdf_report' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download PDF</button>
+      </form>
     </div>
-    <div class="col-auto">
-      <label for="term_id">Term</label>
-      <select name="term_id" id="term_id" class="form-select">
-        {% for t in terms %}
-          <option value="{{ t.id }}">{{ t }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <label for="subject_id">Subject</label>
-      <select name="subject_id" id="subject_id" class="form-select">
-        <option value="">All Subjects</option>
-        {% for s in subjects %}
-          <option value="{{ s.id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <button type="button" class="btn btn-info" onclick="var c=document.getElementById('class_id').value;var t=document.getElementById('term_id').value;var s=document.getElementById('subject_id').value;if(c&&t){var url='{% url 'class_pdf_report' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download Class Report (PDF)</button>
-    </div>
-  </form>
+  </div>
 {% endblock %}

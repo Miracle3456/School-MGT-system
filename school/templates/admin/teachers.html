@@ -1,72 +1,161 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% block title %}Manage Teachers{% endblock %}
 {% block content %}
-  <h2>Teachers</h2>
-  <p class="muted">List of teachers and assigned subjects/classes.</p>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Teachers</h1>
+      <p class="content-subtitle">Manage teacher records and class assignments</p>
+    </div>
+    <button class="btn btn-primary" onclick="document.getElementById('addTeacherForm').scrollIntoView({behavior:'smooth'})">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+      Add Teacher
+    </button>
+  </div>
 
-  <table style="margin-top:12px">
-    <thead>
-      <tr><th>Photo</th><th>Employee ID</th><th>Name</th><th>Subjects</th><th>Classes</th></tr>
-    </thead>
-    <tbody>
-      {% for t in teachers %}
+  <div class="table-container">
+    <div class="table-header">
+      <h3>All Teachers ({{ teachers.count }})</h3>
+      <div class="table-filters">
+        <button class="filter-btn">All Subjects</button>
+        <button class="filter-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+        </button>
+      </div>
+    </div>
+    <table>
+      <thead>
         <tr>
-          <td>
-            {% if t.photo %}
-              <img src="{{ t.photo.url }}" alt="{{ t.user.get_full_name }}" class="thumb" data-full="{{ t.photo.url }}" style="width:42px;height:42px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid #e5e7eb" />
-            {% else %}
-              <div style="width:42px;height:42px;border-radius:6px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:12px;color:#6b7280">N/A</div>
-            {% endif %}
-          </td>
-          <td>{{ t.employee_id }}</td>
-          <td>{{ t.user.get_full_name }}</td>
-          <td>{% for s in t.subjects.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-          <td>{% for c in t.classes.all %}{{ c.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+          <th>ID</th>
+          <th>TEACHER</th>
+          <th>SUBJECTS</th>
+          <th>CLASSES</th>
+          <th>ACTIONS</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="5" class="muted">No teachers yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <h3 style="margin-top:16px">Add teacher</h3>
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="add" />
-    <div class="row">
-      <div class="col"><label>Username</label><input name="username" required /></div>
-      <div class="col"><label>Email</label><input name="email" type="email" /></div>
-    </div>
-    <div class="row">
-      <div class="col"><label>Password</label><input name="password" type="password" required /></div>
-      <div class="col"><label>Employee ID</label><div style="padding:10px;background:#f3f4f6;border-radius:8px;color:#6b7280;font-size:13px">Auto-generated (TC####)</div></div>
-    </div>
-    <div class="row">
-      <div class="col"><label>Photo</label><input name="photo" type="file" accept="image/*" /></div>
-    </div>
-    <div class="row">
-      <div class="col"><label>First name</label><input name="first_name" required /></div>
-      <div class="col"><label>Last name</label><input name="last_name" required /></div>
-    </div>
-    <div class="row">
-      <div class="col"><label>Subjects</label>
-        <select name="subjects" multiple>
-          {% for s in subjects %}
-            <option value="{{ s.id }}">{{ s.name }}</option>
-          {% endfor %}
-        </select>
+      </thead>
+      <tbody>
+        {% for t in teachers %}
+          <tr>
+            <td>{{ t.employee_id }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:12px">
+                {% if t.photo %}
+                  <img src="{{ t.photo.url }}" alt="{{ t.user.get_full_name }}" class="table-avatar" />
+                {% else %}
+                  <div class="table-avatar" style="background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px">{{ t.user.first_name|slice:":1" }}{{ t.user.last_name|slice:":1" }}</div>
+                {% endif %}
+                <div>
+                  <div style="font-weight:600;color:var(--text)">{{ t.user.get_full_name }}</div>
+                  <div style="font-size:12px;color:var(--muted)">{{ t.user.email|default:"-" }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                {% for s in t.subjects.all %}
+                  <span style="padding:4px 8px;background:#ede9fe;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600">{{ s.name }}</span>
+                {% empty %}
+                  <span style="color:var(--muted)">-</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                {% for c in t.classes.all %}
+                  <span style="padding:4px 8px;background:#f0fdf4;color:#15803d;border-radius:6px;font-size:12px;font-weight:600">{{ c.name }}</span>
+                {% empty %}
+                  <span style="color:var(--muted)">-</span>
+                {% endfor %}
+              </div>
+            </td>
+            <td>
+              <div class="table-actions">
+                <button class="table-icon-btn" title="View details">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+                <button class="table-icon-btn" title="Edit">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button class="table-icon-btn" title="More options">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--muted)">No teachers yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="table-pagination">
+      <div class="pagination-info">Showing 1 to {{ teachers.count }} of {{ teachers.count }} entries</div>
+      <div class="pagination-btns">
+        <button disabled>Previous</button>
+        <button style="background:var(--accent);color:#fff;border-color:var(--accent)">1</button>
+        <button disabled>Next</button>
       </div>
-      <div class="col"><label>Classes</label>
-        <select name="classes" multiple>
-          {% for c in classes %}
-            <option value="{{ c.id }}">{{ c.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
     </div>
-    <div style="margin-top:12px"><button class="btn" type="submit">Add teacher</button></div>
-  </form>
+  </div>
 
-  <!-- Reuse modal from students page via base-level listener -->
+  <div class="card" id="addTeacherForm" style="margin-top:32px">
+    <h3 style="margin-bottom:16px;font-size:18px;font-weight:600">Add New Teacher</h3>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add" />
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+        <div>
+          <label>Username</label>
+          <input name="username" required />
+        </div>
+        <div>
+          <label>Email</label>
+          <input name="email" type="email" />
+        </div>
+        <div>
+          <label>First name</label>
+          <input name="first_name" required />
+        </div>
+        <div>
+          <label>Last name</label>
+          <input name="last_name" required />
+        </div>
+        <div>
+          <label>Password</label>
+          <input name="password" type="password" required />
+        </div>
+        <div>
+          <label>Employee ID</label>
+          <div style="padding:10px;background:#f3f4f6;border-radius:8px;color:var(--muted);font-size:13px">Auto-generated (TC####)</div>
+        </div>
+        <div>
+          <label>Subjects</label>
+          <select name="subjects" multiple style="min-height:80px">
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+          <small style="color:var(--muted);font-size:12px;margin-top:4px;display:block">Hold Ctrl to select multiple</small>
+        </div>
+        <div>
+          <label>Classes</label>
+          <select name="classes" multiple style="min-height:80px">
+            {% for c in classes %}
+              <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+          <small style="color:var(--muted);font-size:12px;margin-top:4px;display:block">Hold Ctrl to select multiple</small>
+        </div>
+        <div style="grid-column:1/-1">
+          <label>Photo</label>
+          <input name="photo" type="file" accept="image/*" />
+        </div>
+      </div>
+      <div style="margin-top:20px">
+        <button class="btn btn-primary" type="submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+          Add Teacher
+        </button>
+      </div>
+    </form>
+  </div>
 
 {% endblock %}
