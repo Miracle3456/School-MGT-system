@@ -6,7 +6,10 @@
       <h1 class="content-title">Teacher Details</h1>
       <p class="content-subtitle">Profile and assignments</p>
     </div>
-    <a class="btn btn-outline" href="{% url 'manage_teachers' %}">Back to Teachers</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-outline" href="{% url 'manage_teachers' %}">Back to Teachers</a>
+      <a class="btn btn-warning" href="{% url 'teacher_id_card_pdf' teacher.id %}" target="_blank" rel="noopener">Generate ID (PDF)</a>
+    </div>
   </div>
 
   <div class="card" style="margin-bottom:24px">

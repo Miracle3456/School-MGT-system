@@ -4,6 +4,7 @@
 <div class="mb-3">
   <a href="{% url 'manage_students' %}" class="btn btn-secondary">Back to Students</a>
   <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+  <a href="{% url 'student_id_card_pdf' student.id %}" target="_blank" class="btn btn-warning">Generate ID (PDF)</a>
 </div>
 <h2>Student Details</h2>
 <div class="card mb-3">
