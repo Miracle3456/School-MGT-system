@@ -1,92 +1,117 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% block title %}Student Fee Detail{% endblock %}
 {% block content %}
-<nav style="margin-bottom:12px">
-        <a class="btn btn-outline-primary" href="{% url 'bursar_dashboard' %}">Home</a>
-        <a class="btn" href="javascript:history.back()">Back</a>
-        {% if current_term %}
-                <a class="btn" href="{% url 'bursar_unpaid_report' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Class Unpaid (CSV)</a>
-                <a class="btn" href="{% url 'bursar_unpaid_report_pdf' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Class Unpaid (PDF)</a>
-        {% endif %}
-</nav>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">{{ student.user.get_full_name }}</h1>
+      <p class="content-subtitle">{{ student.admission_number }} • {{ student.student_class.name }}</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      {% if current_term %}
+        <a href="{% url 'bursar_unpaid_report' class_id=student.student_class.id term_id=current_term.id %}" class="btn btn-outline" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          CSV
+        </a>
+        <a href="{% url 'bursar_unpaid_report_pdf' class_id=student.student_class.id term_id=current_term.id %}" class="btn btn-outline" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          PDF
+        </a>
+      {% endif %}
+      <a href="{% url 'bursar_dashboard' %}" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Dashboard
+      </a>
+    </div>
+  </div>
 
-<h1 style="margin-top:0">Fees for {{ student.user.get_full_name }}</h1>
-<p class="muted">Admission No: {{ student.admission_number }} | Class: {{ student.student_class.name }}</p>
+  <div style="display:flex;gap:12px;margin-top:20px">
+    <div class="card" style="flex:1">
+      <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px">Filter by Term</label>
+      <form method="get">
+        <select name="term_id" onchange="this.form.submit()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          <option value="">-- Active Term --</option>
+          {% for t in terms %}
+            <option value="{{ t.id }}" {% if current_term and current_term.id == t.id %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select>
+        <noscript><button class="btn" type="submit" style="margin-top:8px;width:100%">Load</button></noscript>
+      </form>
+    </div>
+  </div>
 
-<form method="get" class="row" style="gap:12px;align-items:flex-end">
-        <div class="col">
-                <label>Term
-                        <select name="term_id" onchange="this.form.submit()">
-                                <option value="">-- active --</option>
-                                {% for t in terms %}
-                                        <option value="{{ t.id }}" {% if current_term and current_term.id == t.id %}selected{% endif %}>{{ t.name }}</option>
-                                {% endfor %}
-                        </select>
-                </label>
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;margin-top:24px">
+    <div class="card">
+      <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">Summary</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="padding:12px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Total Fees</div>
+          <div style="font-size:20px;font-weight:700;color:#d97706">{{ total_fees }} shs</div>
         </div>
-        <noscript><button class="btn" type="submit">Load</button></noscript>
-</form>
-
-<div class="row" style="margin-top:16px;gap:16px;flex-wrap:wrap">
-    <div class="card" style="flex:1 1 300px">
-        <h3 style="margin-top:0">Summary</h3>
-        <p>Total Fees: {{ total_fees }} shs</p>
-        <p>Total Paid: {{ total_paid }} shs</p>
-        <p>Balance: {{ balance }} shs</p>
-        {% if current_term %}
-            <p>
-                <a class="btn" href="{% url 'bursar_unpaid_report' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Unpaid CSV</a>
-                <a class="btn" href="{% url 'bursar_unpaid_report_pdf' class_id=student.student_class.id term_id=current_term.id %}" target="_blank">Unpaid PDF</a>
-            </p>
-        {% endif %}
+        <div style="padding:12px;background:#d1fae5;border-radius:8px;border-left:3px solid #10b981">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Total Paid</div>
+          <div style="font-size:20px;font-weight:700;color:#059669">{{ total_paid }} shs</div>
+        </div>
+        <div style="padding:12px;background:#fee2e2;border-radius:8px;border-left:3px solid #ef4444">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Balance Due</div>
+          <div style="font-size:20px;font-weight:700;color:#dc2626">{{ balance }} shs</div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <a class="btn btn-success" href="{% url 'manage_payments' %}?student_id={{ student.id }}" style="width:100%;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+          Record Payment
+        </a>
+      </div>
     </div>
 
-    <div class="card" style="flex:2 1 480px">
-        <h3 style="margin-top:0">Fee Structure</h3>
-        {% if fees %}
-            <table>
-                <thead><tr><th>Type</th><th>Amount</th><th>Due</th><th>Description</th></tr></thead>
-                <tbody>
-                    {% for f in fees %}
-                        <tr>
-                            <td>{{ f.get_fee_type_display }}</td>
-                            <td>{{ f.amount }} shs</td>
-                            <td>{{ f.due_date }}</td>
-                            <td>{{ f.description }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No fees defined for this term.</p>
-        {% endif %}
-    </div>
-</div>
-
-<div class="card" style="margin-top:24px">
-    <h3 style="margin-top:0">Payments</h3>
-    {% if payments %}
+    <div class="card">
+      <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">Fee Structure</h3>
+      {% if fees %}
         <table>
-            <thead><tr><th>Receipt</th><th>Amount</th><th>Method</th><th>Date</th><th>Notes</th><th>PDF</th></tr></thead>
-            <tbody>
-                {% for p in payments %}
-                    <tr>
-                        <td>{{ p.receipt_no }}</td>
-                        <td>{{ p.amount_paid }} shs</td>
-                        <td>{{ p.get_payment_method_display }}</td>
-                        <td>{{ p.payment_date|date:"Y-m-d H:i" }}</td>
-                        <td>{{ p.notes|default:'-' }}</td>
-                        <td><a href="{% url 'generate_fee_receipt' payment_id=p.id %}" class="btn btn-outline-primary" target="_blank">PDF</a></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
+          <thead><tr><th>TYPE</th><th>AMOUNT</th><th>DUE DATE</th><th>DESCRIPTION</th></tr></thead>
+          <tbody>
+            {% for f in fees %}
+              <tr>
+                <td><span style="padding:4px 8px;background:#ede9fe;color:#7c3aed;border-radius:6px;font-size:12px;font-weight:600">{{ f.get_fee_type_display }}</span></td>
+                <td style="font-weight:600">{{ f.amount }} shs</td>
+                <td style="font-size:13px">{{ f.due_date|date:"M d, Y" }}</td>
+                <td style="font-size:13px;color:var(--muted)">{{ f.description|default:"-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
         </table>
-    {% else %}
-        <p>No payments recorded.</p>
-    {% endif %}
-</div>
+      {% else %}
+        <p style="text-align:center;padding:32px;color:var(--muted)">No fees defined for this term.</p>
+      {% endif %}
+    </div>
+  </div>
 
-<p style="margin-top:16px"><a href="{% url 'manage_payments' %}" class="btn">Back to Manage Payments</a></p>
-<p><a href="{% url 'manage_payments' %}?student_id={{ student.id }}" class="btn btn-success">Record Payment For This Student</a></p>
+  <div class="card" style="margin-top:24px">
+    <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">Payment History</h3>
+    {% if payments %}
+      <table>
+        <thead><tr><th>RECEIPT</th><th>AMOUNT</th><th>METHOD</th><th>DATE</th><th>NOTES</th><th>ACTIONS</th></tr></thead>
+        <tbody>
+          {% for p in payments %}
+            <tr>
+              <td style="font-weight:600;color:var(--accent)">{{ p.receipt_no }}</td>
+              <td style="font-weight:600;color:#10b981">{{ p.amount_paid }} shs</td>
+              <td><span style="padding:4px 8px;background:#f0fdf4;color:#15803d;border-radius:6px;font-size:12px;font-weight:600">{{ p.get_payment_method_display }}</span></td>
+              <td style="font-size:13px">{{ p.payment_date|date:"M d, Y H:i" }}</td>
+              <td style="font-size:13px;color:var(--muted);max-width:200px">{{ p.notes|default:"-" }}</td>
+              <td>
+                <a href="{% url 'generate_fee_receipt' payment_id=p.id %}" class="btn btn-sm btn-outline" target="_blank">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  Receipt
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="text-align:center;padding:32px;color:var(--muted)">No payments recorded yet.</p>
+    {% endif %}
+  </div>
 
 {% endblock %}

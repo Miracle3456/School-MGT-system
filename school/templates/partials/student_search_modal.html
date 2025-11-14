@@ -65,13 +65,45 @@ term_id: optional for teacher (PDF link)
   });
   overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
   input.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(search, 220); });
-  list.addEventListener('mouseover', (e)=>{ const row=e.target.closest('.result-row'); if(!row) return; active=parseInt(row.getAttribute('data-idx')); render(input.value.trim()); });
-  document.addEventListener('keydown', (e)=>{
-    if(overlay.style.display!=='flex') return;
-    if(e.key==='ArrowDown'){ e.preventDefault(); if(items.length){ active=(active+1)%items.length; render(input.value.trim()); }}
-    if(e.key==='ArrowUp'){ e.preventDefault(); if(items.length){ active=(active-1+items.length)%items.length; render(input.value.trim()); }}
-    if(e.key==='Enter'){ e.preventDefault(); if(items.length && active>=0){ const row=list.querySelector(`.result-row[data-idx="${active}"]`); const btn=row && row.querySelector('.actions a'); if(btn){ window.location=btn.getAttribute('href'); } } }
+  // Hover should not re-render to avoid breaking clicks; just move active class
+  list.addEventListener('mouseover', (e)=>{
+    const row=e.target.closest('.result-row');
+    if(!row) return;
+    const newIdx = parseInt(row.getAttribute('data-idx'));
+    if(Number.isInteger(newIdx) && newIdx !== active){
+      const prev = list.querySelector('.result-row.active');
+      if(prev) prev.classList.remove('active');
+      row.classList.add('active');
+      active = newIdx;
+    }
   });
+  document.addEventListener('keydown', (e)=>{
+     if(overlay.style.display!=='flex') return;
+     if(e.key==='ArrowDown'){ e.preventDefault(); if(items.length){ active=(active+1)%items.length; render(input.value.trim()); }}
+     if(e.key==='ArrowUp'){ e.preventDefault(); if(items.length){ active=(active-1+items.length)%items.length; render(input.value.trim()); }}
+     if(e.key==='Enter'){ e.preventDefault(); if(items.length && active>=0){ const row=list.querySelector(`.result-row[data-idx="${active}"]`); const btn=row && row.querySelector('.actions a'); if(btn){ window.location=btn.getAttribute('href'); } } }
+   });
+    // Click navigation: buttons or entire row go to primary action
+    list.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.actions a');
+      const row = btn ? null : e.target.closest('.result-row');
+      const link = btn || (row && row.querySelector('.actions a'));
+      if(link){
+        const href = link.getAttribute('href');
+        if(href && href !== '#'){
+          // Support opening in new tab when Ctrl/Meta or middle-click
+          const isMiddle = e.button === 1;
+          const newTab = e.ctrlKey || e.metaKey || isMiddle || link.getAttribute('target') === '_blank';
+          e.preventDefault();
+          close();
+          if(newTab){
+            window.open(href, '_blank');
+          } else {
+            window.location.assign(href);
+          }
+        }
+      }
+    });
   // Expose opener for pages
   window.openStudentSearch = open;
 })();

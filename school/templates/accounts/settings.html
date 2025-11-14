@@ -1,0 +1,36 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Account Settings{% endblock %}
+{% block content %}
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Settings</h1>
+      <p class="content-subtitle">Update your account information</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+      {% csrf_token %}
+      <div>
+        <label>First name</label>
+        <input name="first_name" value="{{ user_obj.first_name }}" required />
+      </div>
+      <div>
+        <label>Last name</label>
+        <input name="last_name" value="{{ user_obj.last_name }}" required />
+      </div>
+      <div style="grid-column:1/-1">
+        <label>Email</label>
+        <input type="email" name="email" value="{{ user_obj.email }}" />
+      </div>
+      <div style="grid-column:1/-1">
+        <label>Profile photo (student/teacher)</label>
+        <input type="file" name="photo" accept="image/*" />
+        <small style="color:var(--muted);display:block;margin-top:4px">Optional: updates student/teacher photo if applicable.</small>
+      </div>
+      <div style="grid-column:1/-1;margin-top:8px">
+        <button class="btn btn-primary" type="submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}

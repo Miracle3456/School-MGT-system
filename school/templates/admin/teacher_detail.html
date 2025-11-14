@@ -1,0 +1,48 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Teacher Details{% endblock %}
+{% block content %}
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Teacher Details</h1>
+      <p class="content-subtitle">Profile and assignments</p>
+    </div>
+    <a class="btn btn-outline" href="{% url 'manage_teachers' %}">Back to Teachers</a>
+  </div>
+
+  <div class="card" style="margin-bottom:24px">
+    <div style="display:flex;gap:16px;align-items:center">
+      {% if teacher.photo %}
+        <img src="{{ teacher.photo.url }}" alt="{{ teacher.user.get_full_name }}" class="table-avatar" style="width:64px;height:64px" />
+      {% else %}
+        <div class="table-avatar" style="width:64px;height:64px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:18px">{{ teacher.user.first_name|slice:":1" }}{{ teacher.user.last_name|slice:":1" }}</div>
+      {% endif %}
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:18px">{{ teacher.user.get_full_name }}</div>
+        <div style="color:var(--muted)">Employee ID: {{ teacher.employee_id }} • {{ teacher.user.email|default:'No email' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Subjects</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        {% for s in teacher.subjects.all %}
+          <span style="padding:6px 10px;background:#ede9fe;color:#7c3aed;border-radius:999px;font-size:12px;font-weight:600">{{ s.name }}</span>
+        {% empty %}
+          <span style="color:var(--muted)">No subjects assigned.</span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card" id="assignments">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Classes</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        {% for c in teacher.classes.all %}
+          <span style="padding:6px 10px;background:#f0fdf4;color:#15803d;border-radius:999px;font-size:12px;font-weight:600">{{ c.name }}</span>
+        {% empty %}
+          <span style="color:var(--muted)">No classes assigned.</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

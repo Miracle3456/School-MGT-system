@@ -1,0 +1,47 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">My Profile</h1>
+      <p class="content-subtitle">Your account information</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px">
+    <div style="display:flex;gap:16px;align-items:center">
+      {% if student and student.photo %}
+        <img src="{{ student.photo.url }}" alt="{{ user_obj.get_full_name }}" class="table-avatar" style="width:64px;height:64px" />
+      {% elif teacher and teacher.photo %}
+        <img src="{{ teacher.photo.url }}" alt="{{ user_obj.get_full_name }}" class="table-avatar" style="width:64px;height:64px" />
+      {% else %}
+        <div class="table-avatar" style="width:64px;height:64px;background:#e0e7ff;color:#6366f1;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px">{{ user_obj.first_name|slice:":1" }}{{ user_obj.last_name|slice:":1" }}</div>
+      {% endif %}
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:18px">{{ user_obj.get_full_name }}</div>
+        <div style="color:var(--muted)">{{ user_obj.email|default:'No email set' }} • <span style="text-transform:capitalize">{{ user_obj.user_type }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  {% if student %}
+  <div class="card">
+    <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Student Details</h3>
+    <div style="color:var(--muted)">Admission: {{ student.admission_number }} • Class: {{ student.student_class.name|default:'-' }}</div>
+  </div>
+  {% endif %}
+
+  {% if teacher %}
+  <div class="card">
+    <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Teacher Details</h3>
+    <div style="color:var(--muted)">Employee ID: {{ teacher.employee_id }}</div>
+    <div style="margin-top:8px">Subjects:
+      <span>
+        {% for s in teacher.subjects.all %}
+          <span style="padding:4px 8px;background:#ede9fe;color:#7c3aed;border-radius:999px;font-size:12px;font-weight:600;display:inline-block;margin:2px">{{ s.name }}</span>
+        {% empty %}<span style="color:var(--muted)">None</span>{% endfor %}
+      </span>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}

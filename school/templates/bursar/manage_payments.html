@@ -1,79 +1,111 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% block title %}Manage Payments{% endblock %}
 {% block content %}
-        <nav style="margin-bottom:12px">
-            <a class="btn btn-outline-primary" href="{% url 'bursar_dashboard' %}">Home</a>
-            <a class="btn" href="javascript:history.back()">Back</a>
-        </nav>
-
-                <h1 style="margin-top:0">Record a Payment</h1>
-                {% if prefill_student %}
-                    <div class="card" style="margin-bottom:12px">
-                        <h3 style="margin-top:0">Student</h3>
-                        <p><strong>{{ prefill_student.user.get_full_name }}</strong> ({{ prefill_student.admission_number }}) — Class: {{ prefill_student.student_class.name }}</p>
-                        {% if prefill_summary %}
-                            <p>Total Due: {{ prefill_summary.expected }} | Paid: {{ prefill_summary.paid }} | Balance: {{ prefill_summary.balance }}</p>
-                        {% endif %}
-                        <p><a class="btn" href="{% url 'student_fee_detail' student_id=prefill_student.id %}">View Fee Ledger</a></p>
-                    </div>
-                {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="processed_by" value="{{ request.user.id }}" />
-        <label>Student
-            <select name="student_id" id="student_select" required onchange="loadStudentBalance()">
-                <option value="">-- Select student --</option>
-                {% for s in students %}
-                                        <option value="{{ s.id }}" {% if prefill_student_id and prefill_student_id == s.id %}selected{% endif %} data-admission="{{ s.admission_number }}" data-name="{{ s.user.get_full_name }}" data-class="{{ s.student_class.name }}">{{ s.admission_number }} - {{ s.user.get_full_name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <div id="balance_display" class="card" style="margin:12px 0;padding:12px;display:none">
-            <h4 style="margin:0 0 8px 0">Outstanding Balance</h4>
-            <p id="balance_info" style="margin:0"></p>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Record Payment</h1>
+      <p class="content-subtitle">Active Term: {{ active_term }}</p>
+    </div>
+    <a href="{% url 'bursar_dashboard' %}" class="btn btn-outline">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Back to Dashboard
+    </a>
+  </div>
+  {% if prefill_student %}
+    <div class="card" style="margin-bottom:20px;background:#f0fdf4;border:1px solid #86efac">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        {% if prefill_student.photo %}
+          <img src="{{ prefill_student.photo.url }}" class="table-avatar" alt="{{ prefill_student.user.get_full_name }}" />
+        {% else %}
+          <div class="table-avatar" style="background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:600">{{ prefill_student.user.first_name|slice:":1" }}{{ prefill_student.user.last_name|slice:":1" }}</div>
+        {% endif %}
+        <div>
+          <div style="font-weight:600;font-size:16px">{{ prefill_student.user.get_full_name }}</div>
+          <div style="font-size:13px;color:var(--muted)">{{ prefill_student.admission_number }} • {{ prefill_student.student_class.name }}</div>
         </div>
-        <label>Amount
+      </div>
+      {% if prefill_summary %}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px">
+          <div><span style="color:var(--muted);font-size:13px">Total Due:</span> <strong>{{ prefill_summary.expected }} shs</strong></div>
+          <div><span style="color:var(--muted);font-size:13px">Paid:</span> <strong style="color:#10b981">{{ prefill_summary.paid }} shs</strong></div>
+          <div><span style="color:var(--muted);font-size:13px">Balance:</span> <strong style="color:#f59e0b">{{ prefill_summary.balance }} shs</strong></div>
+        </div>
+      {% endif %}
+      <div style="margin-top:12px">
+        <a class="btn btn-sm btn-outline" href="{% url 'student_fee_detail' student_id=prefill_student.id %}">View Full Ledger</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <h3 style="margin:0 0 20px 0;font-size:16px;font-weight:600">Payment Information</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="processed_by" value="{{ request.user.id }}" />
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+        <div style="grid-column:1/-1">
+          <label>Student
+            <select name="student_id" id="student_select" required onchange="loadStudentBalance()">
+              <option value="">-- Select student --</option>
+              {% for s in students %}
+                <option value="{{ s.id }}" {% if prefill_student_id and prefill_student_id == s.id %}selected{% endif %} data-admission="{{ s.admission_number }}" data-name="{{ s.user.get_full_name }}" data-class="{{ s.student_class.name }}">{{ s.admission_number }} - {{ s.user.get_full_name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div id="balance_display" class="card" style="grid-column:1/-1;margin:0;padding:12px;display:none;background:#fffbeb;border:1px solid #fcd34d">
+          <h4 style="margin:0 0 8px 0;font-size:14px">Outstanding Balance</h4>
+          <p id="balance_info" style="margin:0;font-size:13px"></p>
+        </div>
+        <div>
+          <label>Amount (shs)
             <input type="number" name="amount" step="0.01" required />
-        </label>
-                <fieldset style="border:none;padding:0;margin:8px 0">
-                        <label style="display:block;margin-bottom:6px">Payment Method</label>
-                        <style>
-                            .pm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-                            .pm-card{display:flex;align-items:center;gap:10px;border:1px solid #334155;border-radius:12px;padding:12px;background:#0f172a;color:#e5e7eb}
-                            .pm-card svg{width:22px;height:22px;flex:0 0 22px}
-                            .pm-card span{color:#e5e7eb;font-weight:500}
-                            .pm-card:hover{border-color:#60a5fa;background:#0b1324}
-                        </style>
-                        <div class="pm-grid">
-                                {% for key,label in payment_methods %}
-                                    <label class="pm-card">
-                                        <input type="radio" name="payment_method" value="{{ key }}" required />
-                                        {% if key == 'cash' %}
-                                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M3 9c2 0 3-2 3-2m15 2c-2 0-3-2-3-2" stroke="currentColor" stroke-width="2"/></svg>
-                                        {% elif key == 'bank' %}
-                                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8l9-5 9 5v2H3V8Z" stroke="currentColor" stroke-width="2"/><path d="M5 10v8m4-8v8m4-8v8m4-8v8M3 18h18" stroke="currentColor" stroke-width="2"/></svg>
-                                        {% elif key == 'mtn' %}
-                                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="2"/><path d="M7 9h10M7 12h7M7 15h6" stroke="currentColor" stroke-width="2"/></svg>
-                                        {% elif key == 'airtel' %}
-                                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="2"/><path d="M8 7h8M8 11h6M8 15h5" stroke="currentColor" stroke-width="2"/></svg>
-                                        {% elif key == 'momo_pay' %}
-                                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 9h8M10 13h6" stroke="currentColor" stroke-width="2"/><rect x="6" y="8" width="4" height="4" stroke="currentColor" stroke-width="2"/></svg>
-                                        {% else %}
-                                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
-                                        {% endif %}
-                                        <span>{{ label }}</span>
-                                    </label>
-                                {% endfor %}
-                        </div>
-                </fieldset>
-        <label>Transaction Reference
-            <input type="text" name="transaction_reference" />
-        </label>
-        <label>Notes
-            <textarea name="notes" rows="2"></textarea>
-        </label>
-        <button type="submit" class="btn btn-success">Record Payment</button>
+          </label>
+        </div>
+        <div>
+          <label>Transaction Reference
+            <input type="text" name="transaction_reference" placeholder="Optional" />
+          </label>
+        </div>
+        <div style="grid-column:1/-1">
+          <label style="display:block;margin-bottom:12px;font-weight:600">Payment Method</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+            {% for key,label in payment_methods %}
+              <label style="display:flex;align-items:center;gap:10px;border:2px solid var(--border);border-radius:12px;padding:14px;background:#fff;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="if(!this.querySelector('input').checked) this.style.borderColor='var(--border)'">
+                <input type="radio" name="payment_method" value="{{ key }}" required style="margin:0" onchange="this.parentElement.parentElement.querySelectorAll('label').forEach(l=>l.style.borderColor='var(--border)');this.parentElement.style.borderColor='var(--accent)';this.parentElement.style.background='#f5f3ff'" />
+                {% if key == 'cash' %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+                {% elif key == 'bank' %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M3 8l9-5 9 5v2H3V8Z"/><path d="M5 10v8m4-8v8m4-8v8m4-8v8M3 18h18"/></svg>
+                {% elif key == 'mtn' %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 12h7M7 15h6"/></svg>
+                {% elif key == 'airtel' %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 7h8M8 11h6M8 15h5"/></svg>
+                {% elif key == 'momo_pay' %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 9h8M10 13h6"/></svg>
+                {% else %}
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
+                {% endif %}
+                <span style="font-weight:500;font-size:14px">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div style="grid-column:1/-1">
+          <label>Notes (Optional)
+            <textarea name="notes" rows="3" placeholder="Additional payment information..."></textarea>
+          </label>
+        </div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px">
+        <button type="submit" class="btn btn-success">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+          Record Payment
+        </button>
+        <a href="{% url 'bursar_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
     </form>
+  </div>
 
         <hr />
         <h2>Students Fee Summary (Active Term: {{ active_term }})</h2>

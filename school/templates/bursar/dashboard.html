@@ -1,83 +1,116 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 {% block title %}Bursar Dashboard{% endblock %}
 {% block content %}
-    <h1 style="margin-top:0">Bursar Dashboard</h1>
-    <p class="muted">Active Term: {{ active_term }}</p>
-
-    <div class="row" style="margin-top:8px">
-        <div class="card col" style="min-width:200px">
-            <div class="muted">Today's Collection</div>
-            <div style="font-size:22px;font-weight:700">{{ today_total }} shs</div>
-        </div>
-        <div class="card col" style="min-width:200px">
-            <div class="muted">This Week</div>
-            <div style="font-size:22px;font-weight:700">{{ week_total }} shs</div>
-        </div>
-        <div class="card col" style="min-width:200px">
-            <div class="muted">Term Expected</div>
-            <div style="font-size:22px;font-weight:700">{{ total_expected }} shs</div>
-        </div>
-        <div class="card col" style="min-width:200px">
-            <div class="muted">Term Collected</div>
-            <div style="font-size:22px;font-weight:700">{{ total_collected }} shs</div>
-            <div class="muted" style="margin-top:6px">Rate: {{ collection_rate }}%</div>
-        </div>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Bursar Dashboard</h1>
+      <p class="content-subtitle">Active Term: {{ active_term }}</p>
     </div>
-
-    <div class="row" style="margin-top:16px">
-        <div class="card col" style="min-width:320px">
-            <h3 style="margin-top:0">Daily Collections</h3>
-            <canvas id="dailyChart" height="140"></canvas>
-        </div>
-        <div class="card col" style="min-width:320px">
-            <h3 style="margin-top:0">By Payment Method</h3>
-            <canvas id="methodChart" height="140"></canvas>
-        </div>
+    <div style="display:flex;gap:12px">
+      <a href="{% url 'manage_payments' %}" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg>
+        Record Payment
+      </a>
     </div>
+  </div>
 
-    <div class="row" style="margin-top:16px">
-        <div class="card col" style="flex:2 1 480px">
-            <h3 style="margin-top:0">Class Statistics</h3>
-            <table>
-                <thead><tr><th>Class</th><th>Expected</th><th>Collected</th><th>Rate</th></tr></thead>
-                <tbody>
-                    {% for cs in class_stats %}
-                        <tr>
-                            <td>{{ cs.class.name }}</td>
-                            <td>{{ cs.expected }} shs</td>
-                            <td>{{ cs.collected }} shs</td>
-                            <td>
-                                <div style="background:#f3f4f6;border-radius:999px;height:8px;position:relative">
-                                    <div style="background:#10b981;height:8px;border-radius:999px;width: {{ cs.rate|floatformat:0 }}%"></div>
-                                </div>
-                                <span class="muted">{{ cs.rate|floatformat:2 }}%</span>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="4">No class stats available.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="card col" style="flex:1 1 320px">
-            <h3 style="margin-top:0">Recent Payments</h3>
-            <table>
-                <thead><tr><th>Receipt</th><th>Student</th><th>Amount</th><th>Date</th></tr></thead>
-                <tbody>
-                    {% for p in recent_payments %}
-                        <tr>
-                            <td>{{ p.receipt_no }}</td>
-                            <td>{{ p.student.user.get_full_name }}</td>
-                            <td>{{ p.amount_paid }} shs</td>
-                            <td>{{ p.payment_date|date:"Y-m-d H:i" }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="4">No payments recorded yet.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dbeafe;color:#2563eb">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Today's Collection</div>
+        <div class="stat-value">{{ today_total }} shs</div>
+      </div>
     </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#dcfce7;color:#16a34a">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value">{{ week_total }} shs</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#fef3c7;color:#d97706">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Term Expected</div>
+        <div class="stat-value">{{ total_expected }} shs</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#e0e7ff;color:#6366f1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Term Collected</div>
+        <div class="stat-value">{{ total_collected }} shs</div>
+        <div class="stat-trend" style="color:#10b981">Rate: {{ collection_rate }}%</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:24px;margin-top:24px">
+    <div class="card">
+      <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">Daily Collections</h3>
+      <canvas id="dailyChart" height="140"></canvas>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">By Payment Method</h3>
+      <canvas id="methodChart" height="140"></canvas>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;margin-top:24px">
+    <div class="card">
+      <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">Class Statistics</h3>
+      <table>
+        <thead><tr><th>CLASS</th><th>EXPECTED</th><th>COLLECTED</th><th>RATE</th></tr></thead>
+        <tbody>
+          {% for cs in class_stats %}
+            <tr>
+              <td><span style="padding:4px 8px;background:#f0fdf4;color:#15803d;border-radius:6px;font-size:12px;font-weight:600">{{ cs.class.name }}</span></td>
+              <td>{{ cs.expected }} shs</td>
+              <td>{{ cs.collected }} shs</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="background:#f3f4f6;border-radius:999px;height:8px;width:100px;position:relative">
+                    <div style="background:#10b981;height:8px;border-radius:999px;width:{{ cs.rate|floatformat:0 }}%"></div>
+                  </div>
+                  <span style="font-size:12px;color:var(--muted)">{{ cs.rate|floatformat:1 }}%</span>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" style="text-align:center;padding:32px;color:var(--muted)">No class stats available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 16px 0;font-size:16px;font-weight:600">Recent Payments</h3>
+      <div style="max-height:400px;overflow-y:auto">
+        <table>
+          <thead><tr><th>RECEIPT</th><th>STUDENT</th><th>AMOUNT</th></tr></thead>
+          <tbody>
+            {% for p in recent_payments %}
+              <tr>
+                <td style="font-size:12px;color:var(--muted)">{{ p.receipt_no }}</td>
+                <td style="font-size:13px">{{ p.student.user.get_full_name }}</td>
+                <td style="font-weight:600;color:var(--accent)">{{ p.amount_paid }} shs</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" style="text-align:center;padding:32px;color:var(--muted)">No payments yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>

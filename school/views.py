@@ -174,6 +174,15 @@ def admin_view_student(request, student_id):
     return render(request, 'admin/student_detail.html', context)
 
 @login_required
+@user_passes_test(is_admin)
+def admin_view_teacher(request, teacher_id):
+    teacher = get_object_or_404(Teacher, id=teacher_id)
+    context = {
+        'teacher': teacher,
+    }
+    return render(request, 'admin/teacher_detail.html', context)
+
+@login_required
 @user_passes_test(lambda u: is_admin(u) or is_teacher(u) or is_bursar(u))
 def search_students(request):
     """Return JSON list of students filtered by query q (name or admission)."""
@@ -270,6 +279,45 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+@login_required
+def my_profile(request):
+    user = request.user
+    student = getattr(user, 'student', None)
+    teacher = getattr(user, 'teacher', None)
+    context = {
+        'user_obj': user,
+        'student': student,
+        'teacher': teacher,
+    }
+    return render(request, 'accounts/my_profile.html', context)
+
+@login_required
+def account_settings(request):
+    user = request.user
+    message = None
+    if request.method == 'POST':
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        email = request.POST.get('email')
+        if email is not None:
+            user.email = email
+        user.save()
+        # Optional avatar update for student/teacher
+        photo_file = request.FILES.get('photo')
+        try:
+            if photo_file and hasattr(user, 'student') and user.student:
+                user.student.photo = photo_file
+                user.student.save(update_fields=['photo'])
+            elif photo_file and hasattr(user, 'teacher') and user.teacher:
+                user.teacher.photo = photo_file
+                user.teacher.save(update_fields=['photo'])
+        except Exception:
+            pass
+        messages.success(request, 'Settings updated successfully.')
+        return redirect('account_settings')
+    context = { 'user_obj': user }
+    return render(request, 'accounts/settings.html', context)
+
 # Admin Views
 @login_required
 @user_passes_test(is_admin)
@@ -332,6 +380,10 @@ def admin_dashboard(request):
 def manage_students(request):
     students = Student.objects.select_related('user', 'student_class').all()
     classes = Class.objects.all()
+    # Apply filters (GET only)
+    selected_class_id = request.GET.get('class_id')
+    if selected_class_id:
+        students = students.filter(student_class_id=selected_class_id)
     
     if request.method == 'POST':
         # Handle student creation/update
@@ -373,7 +425,7 @@ def manage_students(request):
         
         return redirect('manage_students')
     
-    context = {'students': students, 'classes': classes}
+    context = {'students': students, 'classes': classes, 'selected_class_id': selected_class_id}
     return render(request, 'admin/students.html', context)
 
 @login_required
@@ -382,6 +434,14 @@ def manage_teachers(request):
     teachers = Teacher.objects.select_related('user').prefetch_related('subjects', 'classes').all()
     subjects = Subject.objects.all()
     classes = Class.objects.all()
+    # Apply filters
+    selected_subject_id = request.GET.get('subject_id')
+    selected_class_id = request.GET.get('class_id')
+    if selected_subject_id:
+        teachers = teachers.filter(subjects__id=selected_subject_id)
+    if selected_class_id:
+        teachers = teachers.filter(classes__id=selected_class_id)
+    teachers = teachers.distinct()
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -427,7 +487,13 @@ def manage_teachers(request):
         
         return redirect('manage_teachers')
     
-    context = {'teachers': teachers, 'subjects': subjects, 'classes': classes}
+    context = {
+        'teachers': teachers,
+        'subjects': subjects,
+        'classes': classes,
+        'selected_subject_id': selected_subject_id,
+        'selected_class_id': selected_class_id,
+    }
     return render(request, 'admin/teachers.html', context)
 
 # Teacher Views

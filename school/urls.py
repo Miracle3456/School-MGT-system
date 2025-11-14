@@ -16,12 +16,15 @@ urlpatterns = [
     # Backwards-compatible generic login route (keeps old behavior)
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('account/profile/', views.my_profile, name='my_profile'),
+    path('account/settings/', views.account_settings, name='account_settings'),
 
     # Admin (app) URLs — use a non-conflicting prefix to avoid Django admin site clash
     path('portal/admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('portal/admin/students/', views.manage_students, name='manage_students'),
     path('portal/admin/student/<int:student_id>/', views.admin_view_student, name='admin_view_student'),
     path('portal/admin/teachers/', views.manage_teachers, name='manage_teachers'),
+    path('portal/admin/teacher/<int:teacher_id>/', views.admin_view_teacher, name='admin_view_teacher'),
     path('portal/search/students/', views.search_students, name='search_students'),
 
     # Promotion URLs
