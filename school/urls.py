@@ -27,6 +27,13 @@ urlpatterns = [
     path('portal/admin/teacher/<int:teacher_id>/', views.admin_view_teacher, name='admin_view_teacher'),
     path('portal/search/students/', views.search_students, name='search_students'),
 
+    # ID Cards (Admin)
+    path('portal/admin/id-cards/', views.admin_id_cards, name='admin_id_cards'),
+    path('portal/admin/id/student/<int:student_id>/', views.student_id_card_pdf, name='student_id_card_pdf'),
+    path('portal/admin/id/students/class/<int:class_id>/', views.class_student_id_cards_pdf, name='class_student_id_cards_pdf'),
+    path('portal/admin/id/teacher/<int:teacher_id>/', views.teacher_id_card_pdf, name='teacher_id_card_pdf'),
+    path('portal/admin/id/teachers/all/', views.all_teacher_id_cards_pdf, name='all_teacher_id_cards_pdf'),
+
     # Promotion URLs
     path('portal/admin/promotion/', views.promotion_view, name='promotion'),
     path('portal/admin/promotion/report/', views.promotion_report, name='promotion_report'),

@@ -10,6 +10,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+from reportlab.pdfgen import canvas as RLCanvas
+from reportlab.lib.units import mm
 from io import BytesIO
 import csv
 import json
@@ -1559,3 +1561,170 @@ def promotion_report(request):
         'graduated': graduated,
         'class_stats': class_stats,
     })
+
+
+# ----------------- ID Card Generation (Admin) -----------------
+
+def _draw_id_card(c, x, y, width, height, name, subtitle, id_text, photo_path, role_label):
+    # Border
+    c.setStrokeColor(colors.black)
+    c.roundRect(x, y, width, height, 6, stroke=1, fill=0)
+    # Header bar
+    c.setFillColor(colors.Color(0.2, 0.27, 0.67))
+    c.roundRect(x, y + height - 12*mm, width, 12*mm, 6, stroke=0, fill=1)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(x + width/2, y + height - 8*mm, "Miracle School - ID Card")
+    # Photo
+    img_size = 24*mm
+    if photo_path:
+        try:
+            c.drawImage(photo_path, x + 6*mm, y + height - 12*mm - img_size - 4*mm, img_size, img_size, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+    # Text
+    text_x = x + 6*mm + img_size + 6*mm
+    text_y = y + height - 12*mm - 6*mm
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(text_x, text_y, name)
+    c.setFont("Helvetica", 9)
+    c.setFillColor(colors.gray)
+    c.drawString(text_x, text_y - 5*mm, subtitle)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica", 9)
+    c.drawString(text_x, text_y - 10*mm, id_text)
+    # Role badge
+    badge_w = 22*mm
+    badge_h = 7*mm
+    c.setFillColor(colors.Color(0.93, 0.96, 1))
+    c.roundRect(x + width - badge_w - 6*mm, y + height - 12*mm - 8*mm, badge_w, badge_h, 3, stroke=0, fill=1)
+    c.setFillColor(colors.Color(0.31, 0.35, 0.85))
+    c.setFont("Helvetica-Bold", 8)
+    c.drawCentredString(x + width - badge_w/2 - 6*mm, y + height - 12*mm - 5*mm, role_label)
+
+
+@login_required
+@user_passes_test(is_admin)
+def admin_id_cards(request):
+    classes = Class.objects.all().order_by('name')
+    students_count = Student.objects.count()
+    teachers_count = Teacher.objects.count()
+    return render(request, 'admin/id_cards.html', {
+        'classes': classes,
+        'students_count': students_count,
+        'teachers_count': teachers_count,
+    })
+
+
+@login_required
+@user_passes_test(is_admin)
+def student_id_card_pdf(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+    buffer = BytesIO()
+    c = RLCanvas.Canvas(buffer, pagesize=A4)
+    card_w, card_h = 85*mm, 54*mm
+    x = (A4[0] - card_w) / 2
+    y = (A4[1] - card_h) / 2
+    photo = student.photo.path if getattr(student, 'photo', None) and student.photo else None
+    subtitle = f"Class: {student.student_class.name if student.student_class else '-'}"
+    _draw_id_card(c, x, y, card_w, card_h, student.user.get_full_name(), subtitle, f"Admission: {student.admission_number}", photo, "STUDENT")
+    c.showPage()
+    c.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="student_id_{student.admission_number}.pdf"'
+    return resp
+
+
+@login_required
+@user_passes_test(is_admin)
+def class_student_id_cards_pdf(request, class_id):
+    class_obj = get_object_or_404(Class, id=class_id)
+    students = Student.objects.filter(student_class=class_obj).select_related('user').order_by('user__first_name', 'user__last_name')
+    buffer = BytesIO()
+    c = RLCanvas.Canvas(buffer, pagesize=A4)
+    card_w, card_h = 85*mm, 54*mm
+    margin_x, margin_y = 10*mm, 10*mm
+    gap_x, gap_y = 8*mm, 8*mm
+    cols, rows = 2, 5  # 10 cards per page
+    x0 = margin_x
+    y0 = A4[1] - margin_y - card_h
+    col = row = 0
+    for s in students:
+        x = x0 + col * (card_w + gap_x)
+        y = y0 - row * (card_h + gap_y)
+        photo = s.photo.path if getattr(s, 'photo', None) and s.photo else None
+        subtitle = f"Class: {class_obj.name}"
+        _draw_id_card(c, x, y, card_w, card_h, s.user.get_full_name(), subtitle, f"Admission: {s.admission_number}", photo, "STUDENT")
+        col += 1
+        if col >= cols:
+            col = 0
+            row += 1
+            if row >= rows:
+                c.showPage()
+                row = 0
+    c.showPage()
+    c.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="student_ids_{class_obj.name}.pdf"'
+    return resp
+
+
+@login_required
+@user_passes_test(is_admin)
+def teacher_id_card_pdf(request, teacher_id):
+    teacher = get_object_or_404(Teacher, id=teacher_id)
+    buffer = BytesIO()
+    c = RLCanvas.Canvas(buffer, pagesize=A4)
+    card_w, card_h = 85*mm, 54*mm
+    x = (A4[0] - card_w) / 2
+    y = (A4[1] - card_h) / 2
+    photo = teacher.photo.path if getattr(teacher, 'photo', None) and teacher.photo else None
+    subtitle = f"Subjects: {', '.join([s.name for s in teacher.subjects.all()])}" if teacher.subjects.exists() else "Teacher"
+    _draw_id_card(c, x, y, card_w, card_h, teacher.user.get_full_name(), subtitle, f"Employee: {teacher.employee_id}", photo, "TEACHER")
+    c.showPage()
+    c.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="teacher_id_{teacher.employee_id}.pdf"'
+    return resp
+
+
+@login_required
+@user_passes_test(is_admin)
+def all_teacher_id_cards_pdf(request):
+    teachers = Teacher.objects.select_related('user').order_by('user__first_name', 'user__last_name')
+    buffer = BytesIO()
+    c = RLCanvas.Canvas(buffer, pagesize=A4)
+    card_w, card_h = 85*mm, 54*mm
+    margin_x, margin_y = 10*mm, 10*mm
+    gap_x, gap_y = 8*mm, 8*mm
+    cols, rows = 2, 5
+    x0 = margin_x
+    y0 = A4[1] - margin_y - card_h
+    col = row = 0
+    for t in teachers:
+        x = x0 + col * (card_w + gap_x)
+        y = y0 - row * (card_h + gap_y)
+        photo = t.photo.path if getattr(t, 'photo', None) and t.photo else None
+        subtitle = f"Subjects: {', '.join([s.name for s in t.subjects.all()])}" if t.subjects.exists() else "Teacher"
+        _draw_id_card(c, x, y, card_w, card_h, t.user.get_full_name(), subtitle, f"Employee: {t.employee_id}", photo, "TEACHER")
+        col += 1
+        if col >= cols:
+            col = 0
+            row += 1
+            if row >= rows:
+                c.showPage()
+                row = 0
+    c.showPage()
+    c.save()
+    pdf = buffer.getvalue()
+    buffer.close()
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="teacher_ids.pdf"'
+    return resp

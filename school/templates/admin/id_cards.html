@@ -1,0 +1,101 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}ID Cards{% endblock %}
+{% block content %}
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">ID Cards</h1>
+      <p class="content-subtitle">Generate student and teacher ID cards (single or batch)</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-outline" href="{% url 'admin_dashboard' %}">Back to Admin</a>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ students_count }}</div>
+      <div class="stat-label">Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ teachers_count }}</div>
+      <div class="stat-label">Teachers</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">A4</div>
+      <div class="stat-label">Card Sheet Size</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">2 × 5</div>
+      <div class="stat-label">Cards per page</div>
+    </div>
+  </div>
+
+  <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Student ID Cards</h3>
+      <form method="get" onsubmit="return false" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:220px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Generate by Class</label>
+          <select id="class_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="genStudentBatch()">Download Class IDs (PDF)</button>
+      </form>
+      <div class="user-dropdown-divider" style="margin:12px 0"></div>
+      <form method="get" onsubmit="return false" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:220px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Single Student ID</label>
+          <input id="student_id" type="number" placeholder="Student ID (DB id)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px" />
+        </div>
+        <button type="button" class="btn btn-outline" onclick="genStudentSingle()">Download Single ID (PDF)</button>
+      </form>
+      <p style="color:var(--muted);font-size:12px;margin-top:8px">Tip: You can also open a student profile to get their DB id from the URL.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Teacher ID Cards</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <button type="button" class="btn btn-warning" onclick="genTeachersAll()">Download All Teachers (PDF)</button>
+      </div>
+      <div class="user-dropdown-divider" style="margin:12px 0"></div>
+      <form method="get" onsubmit="return false" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:220px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Single Teacher ID</label>
+          <input id="teacher_id" type="number" placeholder="Teacher ID (DB id)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px" />
+        </div>
+        <button type="button" class="btn btn-outline" onclick="genTeacherSingle()">Download Single ID (PDF)</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  function genStudentBatch(){
+    var c=document.getElementById('class_id').value;
+    if(c){
+      var url = "{% url 'class_student_id_cards_pdf' 0 %}".replace('0', c);
+      window.open(url);
+    } else { alert('Please select a class.'); }
+  }
+  function genStudentSingle(){
+    var s=document.getElementById('student_id').value;
+    if(s){
+      var url = "{% url 'student_id_card_pdf' 0 %}".replace('0', s);
+      window.open(url);
+    } else { alert('Please enter a valid student ID.'); }
+  }
+  function genTeacherSingle(){
+    var t=document.getElementById('teacher_id').value;
+    if(t){
+      var url = "{% url 'teacher_id_card_pdf' 0 %}".replace('0', t);
+      window.open(url);
+    } else { alert('Please enter a valid teacher ID.'); }
+  }
+  function genTeachersAll(){
+    window.open("{% url 'all_teacher_id_cards_pdf' %}");
+  }
+</script>
+{% endblock %}
