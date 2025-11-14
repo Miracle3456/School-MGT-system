@@ -1,39 +1,69 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 
 {% block title %}Report - {{ term }}{% endblock %}
 {% block content %}
-  <h2>Report for {{ student.user.get_full_name }}</h2>
-+  <p class="muted">{{ term }}</p>
-+
-+  <table style="margin-top:12px">
-+    <thead><tr><th>Subject</th><th>Assignment</th><th>Midterm</th><th>Exam</th><th>Total</th><th>Grade</th></tr></thead>
-+    <tbody>
-+      {% for m in marks %}
-+        <tr>
-+          <td>{{ m.subject.name }}</td>
-+          <td>{{ m.assignment_marks }}</td>
-+          <td>{{ m.midterm_marks }}</td>
-+          <td>{{ m.exam_marks }}</td>
-+          <td>{{ m.total_marks }}</td>
-+          <td>{{ m.grade }}</td>
-+        </tr>
-+      {% empty %}
-+        <tr><td colspan="6" class="muted">No marks recorded</td></tr>
-+      {% endfor %}
-+    </tbody>
-+  </table>
-+
-+  <div style="margin-top:12px">
-+    <strong>Total:</strong> {{ total_marks }} &nbsp;&nbsp; <strong>Average:</strong> {{ average }}
-+  </div>
-+
-+  {% if comment %}
-+    <div style="margin-top:12px" class="card">
-+      <h4>Teacher comments</h4>
-+      <p>{{ comment.class_teacher_comment }}</p>
-+      <p class="muted">Head teacher: {{ comment.headteacher_comment|default:'N/A' }}</p>
-+    </div>
-+  {% endif %}
-+
-+  <p style="margin-top:12px"><a class="btn" href="#">Download PDF</a></p>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Report Card</h1>
+      <p class="content-subtitle">{{ student.user.get_full_name }} • {{ term }}</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-outline" href="{% url 'student_dashboard' %}">Back to Dashboard</a>
+      <a class="btn btn-warning" href="/report/pdf/{{ student.id }}/{{ term.id }}/" target="_blank" rel="noopener">Download PDF</a>
+    </div>
+  </div>
+
+  <div class="grid" style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Marks Breakdown</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Assignment</th>
+            <th>Midterm</th>
+            <th>Exam</th>
+            <th>Total</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in marks %}
+            <tr>
+              <td style="text-align:left">{{ m.subject.name }}</td>
+              <td>{{ m.assignment_marks }}</td>
+              <td>{{ m.midterm_marks }}</td>
+              <td>{{ m.exam_marks }}</td>
+              <td><span class="badge" style="background:#eef2ff;color:#4f46e5">{{ m.total_marks }}</span></td>
+              <td>{{ m.grade }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:12px">No marks recorded for this term.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Summary</h3>
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr">
+        <div class="stat-card">
+          <div class="stat-value">{{ total_marks|default:0|floatformat:1 }}</div>
+          <div class="stat-label">Total Marks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ average|default:0|floatformat:1 }}</div>
+          <div class="stat-label">Average</div>
+        </div>
+      </div>
+      {% if comment %}
+        <div style="margin-top:12px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Teacher's Comment</div>
+          <div style="border:1px solid var(--border);border-radius:10px;padding:10px;background:#fafafa">{{ comment.class_teacher_comment }}</div>
+          <div style="font-size:12px;color:var(--muted);margin:10px 0 6px">Head Teacher</div>
+          <div style="border:1px solid var(--border);border-radius:10px;padding:10px;background:#fafafa">{{ comment.headteacher_comment|default:'N/A' }}</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 {% endblock %}

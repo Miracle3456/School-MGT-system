@@ -15,6 +15,38 @@ import csv
 import json
 from decimal import Decimal, InvalidOperation
 from .models import User, Student, Teacher, Class, Subject, Term, Mark, Comment, ClassFee, FeePayment, AcademicYear, Enrollment
+from django.db import connection
+
+# --- Helpers to repair invalid decimal data in marks ---
+def _as_decimal_safe(v):
+    try:
+        return Decimal(v)
+    except Exception:
+        try:
+            return Decimal(str(v))
+        except Exception:
+            return Decimal('0')
+
+def _cleanup_marks(where_clause: str, params: list):
+    """Coerce any invalid decimal strings in marks rows matching criteria.
+    where_clause: SQL like "student_id=%s AND term_id=%s"
+    params: values for placeholders
+    """
+    with connection.cursor() as cur:
+        cur.execute(
+            f"SELECT id, assignment_marks, midterm_marks, exam_marks FROM marks WHERE {where_clause}",
+            params,
+        )
+        rows = cur.fetchall()
+        for mid, a, m, e in rows:
+            a_d = _as_decimal_safe(a)
+            m_d = _as_decimal_safe(m)
+            e_d = _as_decimal_safe(e)
+            total = a_d + m_d + e_d
+            cur.execute(
+                "UPDATE marks SET assignment_marks=%s, midterm_marks=%s, exam_marks=%s, total_marks=%s WHERE id=%s",
+                [str(a_d), str(m_d), str(e_d), str(total), mid],
+            )
 
 
 @login_required
@@ -25,7 +57,12 @@ def batch_student_reports_zip(request, class_id, term_id):
     buffer = BytesIO()
     with zipfile.ZipFile(buffer, 'w') as zipf:
         for student in students:
-            marks = Mark.objects.filter(student=student, term=term).select_related('subject')
+            try:
+                marks_qs = Mark.objects.filter(student=student, term=term).select_related('subject')
+                marks_list = list(marks_qs)
+            except InvalidOperation:
+                _cleanup_marks("student_id=%s AND term_id=%s", [student.id, term.id])
+                marks_list = list(Mark.objects.filter(student=student, term=term).select_related('subject'))
             comment = Comment.objects.filter(student=student, term=term).first()
             # Generate PDF for this student (reuse code from generate_pdf_report)
             pdf_buffer = BytesIO()
@@ -55,7 +92,7 @@ def batch_student_reports_zip(request, class_id, term_id):
                 elements.append(info_para)
             elements.append(Spacer(1, 16))
             data = [['Subject', 'Assignment', 'Midterm', 'Exam', 'Total', 'Grade']]
-            for mark in marks:
+            for mark in marks_list:
                 data.append([
                     mark.subject.name,
                     str(mark.assignment_marks),
@@ -99,11 +136,16 @@ def class_pdf_report(request, class_id, term_id):
     class_obj = get_object_or_404(Class, id=class_id)
     term = get_object_or_404(Term, id=term_id)
     students = Student.objects.filter(student_class=class_obj).select_related('user')
-    marks = Mark.objects.filter(class_assigned=class_obj, term=term).select_related('student', 'subject')
+    try:
+        marks_qs = Mark.objects.filter(class_assigned=class_obj, term=term).select_related('student', 'subject')
+        marks_list = list(marks_qs)
+    except InvalidOperation:
+        _cleanup_marks("class_assigned_id=%s AND term_id=%s", [class_obj.id, term.id])
+        marks_list = list(Mark.objects.filter(class_assigned=class_obj, term=term).select_related('student', 'subject'))
 
     # Build a mapping: student_id -> {subject: mark}
     student_marks = {}
-    for mark in marks:
+    for mark in marks_list:
         student_marks.setdefault(mark.student_id, {})[mark.subject.name] = mark
 
     subjects = list(Subject.objects.all())
@@ -164,11 +206,18 @@ def is_bursar(user):
 @user_passes_test(is_admin)
 def admin_view_student(request, student_id):
     student = get_object_or_404(Student, id=student_id)
-    marks = Mark.objects.filter(student=student).select_related('subject', 'term').order_by('term__academic_year', 'term__term', 'subject__name')
+
+    marks_qs = Mark.objects.filter(student=student).select_related('subject', 'term').order_by('term__academic_year', 'term__term', 'subject__name')
+    try:
+        marks_list = list(marks_qs)
+    except InvalidOperation:
+        _cleanup_marks("student_id=%s", [student.id])
+        marks_list = list(Mark.objects.filter(student=student).select_related('subject', 'term').order_by('term__academic_year', 'term__term', 'subject__name'))
+
     comments = Comment.objects.filter(student=student).select_related('term', 'teacher').order_by('term__academic_year', 'term__term')
     context = {
         'student': student,
-        'marks': marks,
+        'marks': marks_list,
         'comments': comments,
     }
     return render(request, 'admin/student_detail.html', context)
@@ -794,7 +843,12 @@ def student_my_fees(request):
 def generate_pdf_report(request, student_id, term_id):
     student = get_object_or_404(Student, id=student_id)
     term = get_object_or_404(Term, id=term_id)
-    marks = Mark.objects.filter(student=student, term=term).select_related('subject')
+    try:
+        marks_qs = Mark.objects.filter(student=student, term=term).select_related('subject')
+        marks_list = list(marks_qs)
+    except InvalidOperation:
+        _cleanup_marks("student_id=%s AND term_id=%s", [student.id, term.id])
+        marks_list = list(Mark.objects.filter(student=student, term=term).select_related('subject'))
     comment = Comment.objects.filter(student=student, term=term).first()
     
     # Create PDF
@@ -831,7 +885,7 @@ def generate_pdf_report(request, student_id, term_id):
     
     # Marks table
     data = [['Subject', 'Assignment', 'Midterm', 'Exam', 'Total', 'Grade']]
-    for mark in marks:
+    for mark in marks_list:
         data.append([
             mark.subject.name,
             str(mark.assignment_marks),

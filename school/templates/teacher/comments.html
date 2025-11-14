@@ -1,40 +1,63 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 
 {% block title %}Add Comments{% endblock %}
 {% block content %}
-  <h2>Add comments</h2>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Add Comments</h1>
+      <p class="content-subtitle">Record class teacher remarks for students</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-outline" href="{% url 'teacher_dashboard' %}">Back to Dashboard</a>
+    </div>
+  </div>
 
-  <form method="get" style="margin-bottom:12px">
-    <label>Class</label>
-    <select name="class_id" onchange="this.form.submit()">
-      <option value="">-- select class --</option>
-      {% for c in classes %}
-        <option value="{{ c.id }}">{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </form>
+  <!-- Class filter -->
+  <div class="card" style="margin-bottom:16px">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+      <div style="flex:1;min-width:200px">
+        <label style="font-size:13px;margin-bottom:4px;display:block">Class</label>
+        <select name="class_id" onchange="this.form.submit()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          <option value="">-- select class --</option>
+          {% for c in classes %}
+            <option value="{{ c.id }}" {% if request.GET.class_id == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <noscript><button class="btn" type="submit">Load</button></noscript>
+    </form>
+  </div>
 
-  <form method="post">
+  <!-- Comment form -->
+  <form method="post" class="card" style="padding:16px">
     {% csrf_token %}
-    <label>Student</label>
-    <select name="student_id">
-      <option value="">-- select student --</option>
-      {% for s in students %}
-        <option value="{{ s.id }}">{{ s.user.get_full_name }} ({{ s.admission_number }})</option>
-      {% endfor %}
-    </select>
-
-    <label>Term</label>
-    <select name="term_id">
-      {% for t in terms %}
-        <option value="{{ t.id }}">{{ t }}</option>
-      {% endfor %}
-    </select>
-
-    <label>Comment</label>
-    <textarea name="comment" rows="4"></textarea>
-
-    <div style="margin-top:12px"><button class="btn" type="submit">Save comment</button></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Student</label>
+        <select name="student_id" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          <option value="">-- select student --</option>
+          {% for s in students %}
+            <option value="{{ s.id }}">{{ s.user.get_full_name }} ({{ s.admission_number }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Term</label>
+        <select name="term_id" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          {% for t in terms %}
+            <option value="{{ t.id }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label style="font-size:13px;margin-bottom:4px;display:block">Comment</label>
+        <textarea name="comment" rows="4" placeholder="Write your comment..." style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px"></textarea>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn btn-primary" type="submit">Save Comment</button>
+      <button class="btn btn-outline" type="reset">Clear</button>
+    </div>
   </form>
 
 {% endblock %}

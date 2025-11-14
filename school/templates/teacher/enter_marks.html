@@ -1,74 +1,80 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 
 {% block title %}Enter Marks{% endblock %}
 {% block content %}
-  <h2 style="margin-top:0">Enter Marks</h2>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Enter Marks</h1>
+      <p class="content-subtitle">Record assessments for your students</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-outline" href="{% url 'teacher_dashboard' %}">Back to Dashboard</a>
+    </div>
+  </div>
 
-  <form method="get" class="row" style="margin-bottom:16px;gap:16px;align-items:flex-end">
-    <div class="col">
-      <label>Class
-        <select name="class_id" onchange="this.form.submit()">
+  <div class="card" style="margin-bottom:16px">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+      <div style="flex:1;min-width:200px">
+        <label style="font-size:13px;margin-bottom:4px;display:block">Class</label>
+        <select name="class_id" onchange="this.form.submit()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
           <option value="">-- select class --</option>
           {% for c in classes %}
-            <option value="{{ c.id }}" {% if request.GET.class_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            <option value="{{ c.id }}" {% if request.GET.class_id == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
           {% endfor %}
         </select>
-      </label>
-    </div>
-    <noscript><button class="btn" type="submit">Load</button></noscript>
-  </form>
+      </div>
+      <noscript><button class="btn" type="submit">Load</button></noscript>
+    </form>
+  </div>
 
   <form method="post" class="card" style="padding:16px">
     {% csrf_token %}
     <input type="hidden" name="class_id" value="{{ request.GET.class_id }}" />
-    <div class="row" style="gap:16px">
-      <div class="col">
-        <label>Term
-          <select name="term_id" required>
-            <option value="">-- select term --</option>
-            {% for t in terms %}
-              <option value="{{ t.id }}" {% if active_term and active_term.id == t.id %}selected{% endif %}>{{ t.name }}</option>
-            {% endfor %}
-          </select>
-        </label>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Term</label>
+        <select name="term_id" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          <option value="">-- select term --</option>
+          {% for t in terms %}
+            <option value="{{ t.id }}" {% if active_term and active_term.id == t.id %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="col">
-        <label>Student
-          <select name="student_id" required>
-            <option value="">-- select student --</option>
-            {% for s in students %}
-              <option value="{{ s.id }}">{{ s.user.get_full_name }} ({{ s.admission_number }})</option>
-            {% endfor %}
-          </select>
-        </label>
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Student</label>
+        <select name="student_id" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          <option value="">-- select student --</option>
+          {% for s in students %}
+            <option value="{{ s.id }}">{{ s.user.get_full_name }} ({{ s.admission_number }})</option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="col">
-        <label>Subject
-          <select name="subject_id" required>
-            <option value="">-- select subject --</option>
-            {% for sub in subjects %}
-              <option value="{{ sub.id }}">{{ sub.name }}</option>
-            {% endfor %}
-          </select>
-        </label>
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Subject</label>
+        <select name="subject_id" required style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px">
+          <option value="">-- select subject --</option>
+          {% for sub in subjects %}
+            <option value="{{ sub.id }}">{{ sub.name }}</option>
+          {% endfor %}
+        </select>
       </div>
-      <div class="col">
-        <label>Assignment
-          <input name="assignment_marks" type="number" min="0" step="0.01" />
-        </label>
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Assignment</label>
+        <input name="assignment_marks" type="number" min="0" step="0.01" placeholder="e.g. 20" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
       </div>
-      <div class="col">
-        <label>Midterm
-          <input name="midterm_marks" type="number" min="0" step="0.01" />
-        </label>
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Midterm</label>
+        <input name="midterm_marks" type="number" min="0" step="0.01" placeholder="e.g. 30" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
       </div>
-      <div class="col">
-        <label>Exam
-          <input name="exam_marks" type="number" min="0" step="0.01" />
-        </label>
+      <div>
+        <label style="font-size:13px;margin-bottom:4px;display:block">Exam</label>
+        <input name="exam_marks" type="number" min="0" step="0.01" placeholder="e.g. 50" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px" />
       </div>
     </div>
-    <div style="margin-top:16px"><button class="btn btn-primary" type="submit">Save Marks</button></div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="btn btn-primary" type="submit">Save Marks</button>
+      <button class="btn btn-outline" type="reset">Clear</button>
+    </div>
   </form>
 
 {% endblock %}

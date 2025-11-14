@@ -1,29 +1,106 @@
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 
 {% block title %}Student Dashboard{% endblock %}
 {% block content %}
-  <div class="mb-3">
-    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Student Dashboard</h1>
+      <p class="content-subtitle">Welcome, {{ student.user.get_full_name }}</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn btn-outline" href="{% url 'student_my_fees' %}">Fees & Payments</a>
+      {% if active_term %}
+        <a class="btn btn-primary" href="{% url 'view_report' active_term.id %}">View Report</a>
+        <a class="btn btn-warning" href="/report/pdf/{{ student.id }}/{{ active_term.id }}/" target="_blank" rel="noopener">Download PDF</a>
+      {% endif %}
+    </div>
   </div>
-  <h2>Hi, {{ student.user.get_full_name }}</h2>
-  <p class="muted">Active term: {{ active_term }}</p>
 
-  <div style="margin:12px 0">
-    <a class="btn" href="{% url 'student_my_fees' %}">View Fees & Payments</a>
-    {% if active_term %}
-      <a class="btn" href="{% url 'view_report' active_term.id %}">View Report</a>
-    {% endif %}
+  <!-- Quick Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{% if active_term %}{{ active_term.term }}{% else %}-{% endif %}</div>
+      <div class="stat-label">Active Term</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{% if class_rank %}{{ class_rank }}<span style="font-size:12px;color:var(--muted)">/{{ total_students }}</span>{% else %}-{% endif %}</div>
+      <div class="stat-label">Class Rank</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{% if overall_stats and overall_stats.total_marks %}{{ overall_stats.total_marks|floatformat:1 }}{% else %}0{% endif %}</div>
+      <div class="stat-label">Total Marks</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{% if overall_stats %}{{ overall_stats.average_score|floatformat:1 }}{% else %}0{% endif %}</div>
+      <div class="stat-label">Average Score</div>
+    </div>
   </div>
 
-  <h3 style="margin-top:12px">Recent marks</h3>
-  <table>
-    <thead><tr><th>Subject</th><th>Total</th><th>Grade</th></tr></thead>
-    <tbody>
-      {% for m in current_marks|slice:":10" %}
-        <tr><td>{{ m.subject.name }}</td><td>{{ m.total_marks }}</td><td>{{ m.grade }}</td></tr>
+  <div class="grid" style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+    <!-- Current Marks -->
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Current Marks</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Assignment</th>
+            <th>Midterm</th>
+            <th>Exam</th>
+            <th>Total</th>
+            <th>Grade</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in current_marks %}
+            <tr>
+              <td style="text-align:left">{{ m.subject.name }}</td>
+              <td>{{ m.assignment_marks }}</td>
+              <td>{{ m.midterm_marks }}</td>
+              <td>{{ m.exam_marks }}</td>
+              <td><span class="badge" style="background:#eef2ff;color:#4f46e5">{{ m.total_marks }}</span></td>
+              <td>{{ m.grade }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:12px">No marks available for the active term.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Subject Performance -->
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Subject Performance</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        {% for s in subject_performance %}
+          <div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fafafa;min-width:160px">
+            <div style="font-weight:600;color:var(--text)">{{ s.subject__name }}</div>
+            <div style="font-size:12px;color:var(--muted)">Total: {{ s.marks|floatformat:1 }}</div>
+          </div>
+        {% empty %}
+          <div style="color:var(--muted)">No subject performance yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Work -->
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Pending Work</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      {% for p in pending_work %}
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:10px">
+          <div>
+            <div style="font-weight:600">{{ p.subject__name }}</div>
+            <div style="font-size:12px;color:var(--muted)">
+              {% if p.assignment_marks == 0 %}<span class="badge" style="background:#fff7ed;color:#9a3412">Assignment pending</span>{% endif %}
+              {% if p.exam_marks == 0 %}<span class="badge" style="background:#fee2e2;color:#b91c1c">Exam pending</span>{% endif %}
+            </div>
+          </div>
+        </div>
       {% empty %}
-        <tr><td colspan="3" class="muted">No marks available</td></tr>
+        <div style="color:var(--muted)">No pending work right now.</div>
       {% endfor %}
-    </tbody>
-  </table>
+    </div>
+  </div>
 {% endblock %}

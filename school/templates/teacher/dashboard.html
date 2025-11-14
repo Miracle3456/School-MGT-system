@@ -1,95 +1,189 @@
 
-{% extends 'base.html' %}
+{% extends 'base_dashboard.html' %}
 
 {% block title %}Teacher Dashboard{% endblock %}
 
 {% block content %}
   {% include 'partials/student_search_modal.html' with context_key='teacher' term_id=active_term.id %}
-  <div class="mb-3">
-    <a href="{% url 'login_select' %}" class="btn btn-outline-primary">Home</a>
-  </div>
-  <h2>Welcome, {{ teacher.user.get_full_name }}</h2>
-  <div style="margin:12px 0"><button class="btn btn-outline-primary" type="button" onclick="openStudentSearch()">🔍 Search Students (Ctrl+K)</button></div>
-  <p class="muted">You teach:
-    {% if teacher.subjects.all %}
-      {% for s in teacher.subjects.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-    {% else %}
-      None
-    {% endif %}
-  </p>
 
-  <div style="margin-top:16px">
-    <a class="btn" href="{% url 'enter_marks' %}">Enter marks</a>
-    <a class="btn" href="{% url 'add_comments' %}" style="background:#ef4444">Add comments</a>
+  <div class="content-header">
+    <div>
+      <h1 class="content-title">Teacher Dashboard</h1>
+      <p class="content-subtitle">Welcome, {{ teacher.user.get_full_name }}</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-outline" type="button" onclick="openStudentSearch()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Search Students (Ctrl+K)
+      </button>
+      <a class="btn btn-primary" href="{% url 'enter_marks' %}">Enter Marks</a>
+      <a class="btn btn-purple" href="{% url 'add_comments' %}">Add Comments</a>
+    </div>
   </div>
 
-  <h3 style="margin-top:24px">Batch Reports</h3>
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-auto">
-      <label for="batch_class_id">Grade/Class</label>
-      <select name="batch_class_id" id="batch_class_id" class="form-select">
-        {% for c in classes %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
+  <!-- Quick Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ classes|length }}</div>
+      <div class="stat-label">Your Classes</div>
     </div>
-    <div class="col-auto">
-      <label for="batch_term_id">Term</label>
-      <select name="batch_term_id" id="batch_term_id" class="form-select">
-        {% if terms %}
-          {% for t in terms %}
-            <option value="{{ t.id }}">{{ t }}</option>
-          {% endfor %}
-        {% endif %}
-      </select>
+    <div class="stat-card">
+      <div class="stat-value">{{ subjects|length }}</div>
+      <div class="stat-label">Subjects</div>
     </div>
-    <div class="col-auto">
-      <label for="batch_subject_id">Subject</label>
-      <select name="batch_subject_id" id="batch_subject_id" class="form-select">
-        <option value="">All Subjects</option>
-        {% for s in subjects %}
-          <option value="{{ s.id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
+    <div class="stat-card">
+      <div class="stat-value">{% if recent_activities %}{{ recent_activities|length }}{% else %}0{% endif %}</div>
+      <div class="stat-label">Recent Updates</div>
     </div>
-    <div class="col-auto">
-      <button type="button" class="btn btn-warning" onclick="var c=document.getElementById('batch_class_id').value;var t=document.getElementById('batch_term_id').value;var s=document.getElementById('batch_subject_id').value;if(c&&t){var url='{% url 'batch_student_reports_zip' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download All Student Reports (ZIP)</button>
+    <div class="stat-card">
+      <div class="stat-value">{% if active_term %}{{ active_term.term }}{% else %}-{% endif %}</div>
+      <div class="stat-label">Active Term</div>
     </div>
-  </form>
+  </div>
 
-  <h3 style="margin-top:24px">Class Reports</h3>
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-auto">
-      <label for="class_id">Grade/Class</label>
-      <select name="class_id" id="class_id" class="form-select">
-        {% for c in classes %}
-          <option value="{{ c.id }}">{{ c.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <label for="term_id">Term</label>
-      <select name="term_id" id="term_id" class="form-select">
-        {% if terms %}
-          {% for t in terms %}
-            <option value="{{ t.id }}">{{ t }}</option>
+  <div class="grid" style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+    <!-- Class Performance -->
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Class Performance</h3>
+      <table>
+        <thead>
+          <tr><th>Class</th><th>Avg Score</th><th>Students</th><th>Pending</th></tr>
+        </thead>
+        <tbody>
+          {% for cs in class_statistics %}
+            <tr>
+              <td>{{ cs.class.name }}</td>
+              <td><span class="badge" style="background:#eef2ff;color:#4f46e5">{{ cs.avg_score|default:"-"|floatformat:1 }}</span></td>
+              <td>{{ cs.total_students|default:0 }}</td>
+              <td>
+                <span class="badge" style="background:#fff7ed;color:#c2410c">A {{ cs.assignments_pending|default:0 }}</span>
+                <span class="badge" style="background:#fee2e2;color:#b91c1c">E {{ cs.exams_pending|default:0 }}</span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px">No performance data yet.</td></tr>
           {% endfor %}
-        {% endif %}
-      </select>
+        </tbody>
+      </table>
     </div>
-    <div class="col-auto">
-      <label for="subject_id">Subject</label>
-      <select name="subject_id" id="subject_id" class="form-select">
-        <option value="">All Subjects</option>
-        {% for s in subjects %}
-          <option value="{{ s.id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <button type="button" class="btn btn-info" onclick="var c=document.getElementById('class_id').value;var t=document.getElementById('term_id').value;var s=document.getElementById('subject_id').value;if(c&&t){var url='{% url 'class_pdf_report' 0 0 %}'.replace('0/0', c + '/' + t);if(s){url+='?subject_id='+s;}window.open(url);}else{alert('Please select both class and term.');}">Download Class Report (PDF)</button>
-    </div>
-  </form>
-  <!-- Search modal handled by included partial -->
 
+    <!-- Subject Overview -->
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Subject Overview</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        {% for s in subject_statistics %}
+          <div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fafafa;min-width:140px">
+            <div style="font-weight:600;color:var(--text)">{{ s.subject__name }}</div>
+            <div style="font-size:12px;color:var(--muted)">Avg: {{ s.avg_score|default:"-"|floatformat:1 }}</div>
+            <div style="font-size:12px;color:var(--muted)">Students: {{ s.total_students|default:0 }}</div>
+          </div>
+        {% empty %}
+          <div style="color:var(--muted)">No subject stats yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card" style="margin-top:16px">
+    <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Recent Activity</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      {% for m in recent_activities %}
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--border);border-radius:10px">
+          <div>
+            <div style="font-weight:600">{{ m.student.user.get_full_name }}</div>
+            <div style="font-size:12px;color:var(--muted)">{{ m.subject.name }} • Updated {{ m.updated_at|date:'M d, Y H:i' }}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <span class="badge" style="background:#eef2ff;color:#4f46e5">Total {{ m.total_marks }}</span>
+            <span class="badge" style="background:#ecfeff;color:#0369a1">Ass {{ m.assignment_marks }}</span>
+            <span class="badge" style="background:#f0f9ff;color:#075985">Mid {{ m.midterm_marks }}</span>
+            <span class="badge" style="background:#fff7ed;color:#9a3412">Exam {{ m.exam_marks }}</span>
+          </div>
+        </div>
+      {% empty %}
+        <div style="color:var(--muted)">No recent activity.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Reports -->
+  <div class="grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Batch Reports</h3>
+      <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Grade/Class</label>
+          <select name="batch_class_id" id="batch_class_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Term</label>
+          <select name="batch_term_id" id="batch_term_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for t in terms %}<option value="{{ t.id }}">{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Subject</label>
+          <select name="batch_subject_id" id="batch_subject_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All Subjects</option>
+            {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <button type="button" class="btn btn-warning" onclick="downloadBatchReports()">Download All Student Reports (ZIP)</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:12px;font-size:16px;font-weight:600">Class Reports</h3>
+      <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end">
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Grade/Class</label>
+          <select name="class_id" id="class_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Term</label>
+          <select name="term_id" id="term_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            {% for t in terms %}<option value="{{ t.id }}">{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <div style="flex:1;min-width:150px">
+          <label style="font-size:13px;margin-bottom:4px;display:block">Subject</label>
+          <select name="subject_id" id="subject_id" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+            <option value="">All Subjects</option>
+            {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="downloadClassReport()">Download Class Report (PDF)</button>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}
+{% block page_scripts %}
+<script>
+  function downloadBatchReports(){
+    var c=document.getElementById('batch_class_id').value;
+    var t=document.getElementById('batch_term_id').value;
+    var s=document.getElementById('batch_subject_id').value;
+    if(c && t){
+      var url="{% url 'batch_student_reports_zip' 0 0 %}".replace('0/0', c + '/' + t);
+      if(s){ url += '?subject_id=' + s; }
+      window.open(url);
+    } else { alert('Please select both class and term.'); }
+  }
+  function downloadClassReport(){
+    var c=document.getElementById('class_id').value;
+    var t=document.getElementById('term_id').value;
+    var s=document.getElementById('subject_id').value;
+    if(c && t){
+      var url="{% url 'class_pdf_report' 0 0 %}".replace('0/0', c + '/' + t);
+      if(s){ url += '?subject_id=' + s; }
+      window.open(url);
+    } else { alert('Please select both class and term.'); }
+  }
+</script>
 {% endblock %}
